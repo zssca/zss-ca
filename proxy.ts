@@ -40,7 +40,7 @@ export async function proxy(request: NextRequest): Promise<Response> {
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
-    "frame-src https://js.stripe.com https://hooks.stripe.com",
+    "frame-src https://js.stripe.com https://hooks.stripe.com https://player.vimeo.com",
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com",
     "upgrade-insecure-requests",
   ].join('; ')
