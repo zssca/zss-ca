@@ -35,9 +35,17 @@ export interface SectionHeaderProps {
 }
 
 export interface SectionContainerProps extends Omit<React.ComponentPropsWithoutRef<'section'>, 'title'> {
-  /** Container width constraint @default 'default' (max-w-7xl) */
+  /**
+   * Container width constraint
+   * @default 'default' (max-w-7xl)
+   * Available sizes: none, xs, sm, md, lg, xl, 2xl, 3xl, 4xl, 5xl, 6xl, 7xl, default, full
+   */
   maxWidth?: MaxWidth
-  /** Padding preset @default 'default' (py-16 px-4 sm:px-6 lg:px-8) */
+  /**
+   * Vertical and horizontal padding
+   * @default 'default' (lg: py-16)
+   * Available sizes: none, xs (4), sm (8), md (12), lg (16), xl (20), 2xl (24), 3xl (32), 4xl (40), 5xl (48), 6xl (64), 7xl (80)
+   */
   padding?: Padding
   /** Remove horizontal padding on mobile @default false */
   mobileEdgeToEdge?: boolean
@@ -57,9 +65,17 @@ export interface SectionContainerProps extends Omit<React.ComponentPropsWithoutR
   headingLevel?: HeadingLevel
   /** Text alignment for header @default 'center' */
   textAlign?: TextAlign
-  /** Max width for header content @default '3xl' */
+  /**
+   * Max width for header content
+   * @default '3xl'
+   * Available sizes: sm, md, lg, xl, 2xl, 3xl, 4xl, 5xl
+   */
   headerMaxWidth?: HeaderMaxWidth
-  /** Gap between header and content @default 'lg' */
+  /**
+   * Gap between header and content
+   * @default 'default' (lg: gap-16)
+   * Available sizes: none, xs (4), sm (8), md (12), lg (16), xl (20), 2xl (24), 3xl (32), 4xl (40), 5xl (48), 6xl (64), 7xl (80)
+   */
   gap?: Gap
   /** Separator placement @default 'none' */
   separator?: Separator
@@ -274,7 +290,7 @@ export function SectionContainer({
   headingLevel = 'h2',
   textAlign = 'center',
   headerMaxWidth = '3xl',
-  gap = 'lg',
+  gap = 'default',
   separator = 'none',
   variant = 'default',
   children,
