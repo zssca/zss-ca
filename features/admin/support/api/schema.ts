@@ -28,6 +28,7 @@ export const replyToTicketSchema = z.object({
     .string()
     .min(10, 'Reply must be at least 10 characters')
     .max(5000, 'Reply must be less than 5000 characters'),
+  isInternal: z.boolean().default(false),
 })
 
 export const updateTicketStatusSchema = z.object({

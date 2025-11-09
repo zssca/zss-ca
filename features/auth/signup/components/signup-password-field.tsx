@@ -39,7 +39,7 @@ export function SignupPasswordField({
   onPasswordInput,
 }: SignupPasswordFieldProps): React.JSX.Element {
   return (
-    <Field data-invalid={!!fieldErrors?.password}>
+    <Field data-invalid={!!fieldErrors?.['password']}>
       <div className="flex items-center justify-between gap-2">
         <FieldLabel htmlFor="password">
           Password
@@ -63,9 +63,9 @@ export function SignupPasswordField({
           data-webauthn="true"
           required
           aria-required="true"
-          aria-invalid={!!fieldErrors?.password}
+          aria-invalid={!!fieldErrors?.['password']}
           aria-describedby={[
-            fieldErrors?.password ? 'signup-password-error' : null,
+            fieldErrors?.['password'] ? 'signup-password-error' : null,
             PASSWORD_STRENGTH_ID,
             PASSWORD_HINT_ID,
           ].filter(Boolean).join(' ') || undefined}
@@ -81,10 +81,10 @@ export function SignupPasswordField({
         </InputGroupAddon>
       </InputGroup>
       <PasswordStrengthIndicator id={PASSWORD_STRENGTH_ID} result={passwordResult} className="mt-2" />
-      {fieldErrors?.password ? (
+      {fieldErrors?.['password'] ? (
         <FieldError
           id="signup-password-error"
-          errors={fieldErrors.password.map((message) => ({ message }))}
+          errors={fieldErrors['password'].map((message) => ({ message }))}
         />
       ) : null}
     </Field>

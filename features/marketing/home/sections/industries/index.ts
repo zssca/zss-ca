@@ -1,3 +1,3 @@
-export { HomeIndustries } from './industries'
-export { homeIndustriesData } from './industries.data'
-export type { HomeIndustry, HomeIndustriesData } from './industries.types'
+export { Industries } from './industries'
+export { industriesData } from './industries.data'
+export type { Industry, IndustriesData } from './industries.types'

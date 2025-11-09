@@ -3,14 +3,18 @@ import 'server-only'
 import { cache } from 'react'
 import { createClient, requireAuth, requireAdminRole } from '@/lib/supabase'
 import type { Database } from '@/lib/types/database.types'
+import {
+  TicketWithProfileSchema,
+  validateArray,
+  validateItem,
+  type TicketWithProfile,
+} from '@/lib/types/validation/database-joins'
 
-type SupportTicket = Database['public']['Tables']['support_ticket']['Row']
-type TicketReply = Database['public']['Tables']['ticket_reply']['Row']
 type Profile = Database['public']['Tables']['profile']['Row']
+type TicketReply = Database['public']['Tables']['ticket_reply']['Row']
 
-export type TicketWithProfile = SupportTicket & {
-  profile: Pick<Profile, 'id' | 'contact_email' | 'contact_name'>
-}
+// Re-export for external consumers
+export type { TicketWithProfile }
 
 export type ReplyWithProfile = TicketReply & {
   profile: Pick<Profile, 'id' | 'contact_email' | 'contact_name' | 'role'>
@@ -49,7 +53,7 @@ export const getUserTickets = cache(async (userId: string): Promise<TicketWithPr
     return []
   }
 
-  return (data as unknown as TicketWithProfile[]) || []
+  return validateArray(TicketWithProfileSchema, data ?? [], 'Failed to validate user tickets')
 })
 
 // ✅ Next.js 15+: Use React cache() for request deduplication within same render
@@ -81,7 +85,7 @@ export const listTickets = cache(async (): Promise<TicketWithProfile[]> => {
     return []
   }
 
-  return (data as unknown as TicketWithProfile[]) || []
+  return validateArray(TicketWithProfileSchema, data ?? [], 'Failed to validate all tickets')
 })
 
 // ✅ Next.js 15+: Use React cache() for request deduplication within same render
@@ -124,27 +128,36 @@ export const getTicketById = cache(async (
     ticketQuery = ticketQuery.eq('profile_id', user.id)
   }
 
+  // Build reply query with internal filtering for non-admin users
+  let replyQuery = supabase
+    .from('ticket_reply')
+    .select(
+      `
+      id,
+      support_ticket_id,
+      author_profile_id,
+      message,
+      is_internal,
+      created_at,
+      updated_at,
+      profile:author_profile_id(id, contact_email, contact_name, role)
+    `
+    )
+    .eq('support_ticket_id', ticketId)
+    .order('created_at', { ascending: true })
+
+  // SECURITY: Non-admin users should not see internal notes
+  if (!isAdmin) {
+    replyQuery = replyQuery.eq('is_internal', false)
+  }
+
   // ✅ Next.js 15+: Use Promise.all to avoid sequential waterfall
   const [
     { data: ticket, error: ticketError },
     { data: replies, error: repliesError }
   ] = await Promise.all([
     ticketQuery.single(),
-    supabase
-      .from('ticket_reply')
-      .select(
-        `
-        id,
-        support_ticket_id,
-        author_profile_id,
-        message,
-        is_internal,
-        created_at,
-        profile:author_profile_id(id, contact_email, contact_name, role)
-      `
-      )
-      .eq('support_ticket_id', ticketId)
-      .order('created_at', { ascending: true })
+    replyQuery
   ])
 
   if (ticketError || !ticket) {
@@ -156,9 +169,10 @@ export const getTicketById = cache(async (
     console.error('Error fetching replies:', repliesError)
   }
 
+  const validatedTicket = validateItem(TicketWithProfileSchema, ticket, 'Failed to validate ticket')
   return {
-    ...(ticket as unknown as TicketWithProfile),
-    replies: (replies as unknown as ReplyWithProfile[]) || [],
+    ...validatedTicket,
+    replies: replies || [],
   }
 })
 

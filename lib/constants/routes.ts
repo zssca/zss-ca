@@ -33,12 +33,14 @@ export const ROUTES = {
   ADMIN_SITES: '/admin/sites',
   ADMIN_SITES_NEW: '/admin/sites/new',
   ADMIN_SUPPORT: '/admin/support',
+  ADMIN_LEADS: '/admin/leads',
   ADMIN_ANALYTICS: '/admin/analytics',
   ADMIN_BILLING: '/admin/billing',
   ADMIN_NOTIFICATIONS: '/admin/notifications',
   ADMIN_SETTINGS: '/admin/settings',
   ADMIN_PROFILE: '/admin/profile',
   ADMIN_AUDIT_LOGS: '/admin/audit-logs',
+  ADMIN_DATABASE: '/admin/database',
 } as const
 
 export type RouteKey = keyof typeof ROUTES

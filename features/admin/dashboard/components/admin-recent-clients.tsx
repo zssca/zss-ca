@@ -32,9 +32,10 @@ interface AdminRecentClientsProps {
     company_name: string | null
     created_at: string
   }>
+  className?: string
 }
 
-export function AdminRecentClients({ clients }: AdminRecentClientsProps): React.JSX.Element {
+export function AdminRecentClients({ clients, className }: AdminRecentClientsProps): React.JSX.Element {
   const [query, setQuery] = useState('')
 
   // React Compiler automatically memoizes this simple filtering
@@ -56,13 +57,44 @@ export function AdminRecentClients({ clients }: AdminRecentClientsProps): React.
   const hasClients = clients.length > 0
   const hasResults = filteredClients.length > 0
 
+  const Header = (
+    <ItemHeader className="flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div>
+        <ItemTitle>Recent Clients</ItemTitle>
+        <ItemDescription>Latest registered client accounts</ItemDescription>
+      </div>
+      <ItemActions className="flex flex-wrap gap-2" role="group" aria-label="Client management actions">
+        <Button asChild size="sm">
+          <Link href={ROUTES.ADMIN_CLIENTS}>Manage Clients</Link>
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <MoreHorizontal className="size-4" aria-hidden="true" />
+              <span className="sr-only">Open client actions menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild>
+              <Link href={`${ROUTES.ADMIN_CLIENTS}?filter=new`}>View new clients</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`${ROUTES.ADMIN_CLIENTS}?filter=inactive`}>Filter inactive</Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href={`${ROUTES.ADMIN_CLIENTS}?export=csv`}>Export CSV</Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </ItemActions>
+    </ItemHeader>
+  )
+
   if (!hasClients) {
     return (
-      <Item variant="outline">
-        <ItemHeader>
-          <ItemTitle>Recent Clients</ItemTitle>
-          <ItemDescription>Latest registered client accounts</ItemDescription>
-        </ItemHeader>
+      <Item variant="outline" className={className} role="listitem">
+        {Header}
         <ItemContent className="basis-full">
           <Empty className="py-8">
             <EmptyHeader>
@@ -78,51 +110,17 @@ export function AdminRecentClients({ clients }: AdminRecentClientsProps): React.
   }
 
   return (
-    <Item variant="outline">
-      <ItemHeader>
-        <ItemTitle>Recent Clients</ItemTitle>
-        <ItemDescription>Latest registered client accounts</ItemDescription>
-      </ItemHeader>
+    <Item variant="outline" className={className} role="listitem">
+      {Header}
       <ItemContent className="basis-full space-y-4">
         <ClientSearchField
           query={query}
           onQueryChange={setQuery}
           resultsCount={filteredClients.length}
         />
-      </ItemContent>
-      <ItemActions>
-        <div className="flex gap-2" role="group" aria-label="Client management actions">
-          <Button asChild size="sm">
-            <Link href={ROUTES.ADMIN_CLIENTS}>Manage Clients</Link>
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <MoreHorizontal className="size-4" aria-hidden="true" />
-                <span className="sr-only">Open client actions menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link href={`${ROUTES.ADMIN_CLIENTS}?filter=new`}>View new clients</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href={`${ROUTES.ADMIN_CLIENTS}?filter=inactive`}>Filter inactive</Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href={`${ROUTES.ADMIN_CLIENTS}?export=csv`}>Export CSV</Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </ItemActions>
-      {hasResults ? (
-        <ItemContent className="basis-full">
+        {hasResults ? (
           <RecentClientsTable clients={filteredClients} />
-        </ItemContent>
-      ) : (
-        <ItemContent className="basis-full">
+        ) : (
           <Empty className="py-8" aria-live="polite">
             <EmptyHeader>
               <EmptyTitle>No matching clients</EmptyTitle>
@@ -136,8 +134,8 @@ export function AdminRecentClients({ clients }: AdminRecentClientsProps): React.
               </Button>
             </EmptyContent>
           </Empty>
-        </ItemContent>
-      )}
+        )}
+      </ItemContent>
     </Item>
   )
 }

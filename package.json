@@ -1,7 +1,12 @@
 {
-  "name": "zss-ca-v3",
+  "name": "zss-ca",
   "version": "0.1.0",
   "private": true,
+  "author": {
+    "name": "Zenith Strategic Solutions",
+    "email": "info@zss.ca",
+    "url": "https://zss.ca"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -40,6 +45,9 @@
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.76.1",
     "@tanstack/react-table": "^8.21.3",
+    "@upstash/ratelimit": "^2.0.7",
+    "@upstash/redis": "^1.35.6",
+    "@vercel/otel": "^2.1.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -59,6 +67,7 @@
     "resend": "^6.2.2",
     "sonner": "^2.0.7",
     "stripe": "^19.1.0",
+    "svg-dotted-map": "^2.0.1",
     "tailwind-merge": "^3.3.1",
     "vaul": "^1.1.2",
     "zod": "^4.1.12"

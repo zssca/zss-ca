@@ -1,35 +1,61 @@
 'use client'
 
-import { useActionState, useEffect, useRef } from 'react'
-import { toast } from 'sonner'
-import { Item } from '@/components/ui/item'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { useActionState, useEffect } from 'react'
 import { AlertCircle } from 'lucide-react'
-import { submitContactForm } from '../../api/mutations'
+import { toast } from 'sonner'
+import { SectionContainer } from '@/components/layout/shared'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldSet,
+} from '@/components/ui/field'
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemTitle,
+} from '@/components/ui/item'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import { submitContactForm } from '../../api'
 import { contactFormData } from './contact-form.data'
 import { ContactFormSubmitButton } from './contact-form-submit-button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+
+const contactFieldLabels: Record<string, string> = {
+  fullName: 'Full Name',
+  email: 'Email',
+  companyName: 'Company Name',
+  phone: 'Phone',
+  serviceInterest: 'Service Interest',
+  message: 'Message',
+}
 
 export function ContactForm() {
   const [state, formAction, isPending] = useActionState(submitContactForm, {})
-  const firstErrorRef = useRef<HTMLInputElement>(null)
+  const headingId = 'contact-form-heading'
+  const defaultServiceInterest = contactFormData.serviceOptions[0]?.value ?? 'website_build'
 
-  // Toast feedback and focus first error field after validation
   useEffect(() => {
     if (!isPending && state) {
       if (state.success) {
         toast.success('Message sent successfully', {
-          description: 'Thank you for contacting us. We will get back to you soon.',
+          description: contactFormData.successMessage,
         })
       } else if (state.errors && Object.keys(state.errors).length > 0) {
-        // Focus first error field
-        if (firstErrorRef.current) {
-          firstErrorRef.current.focus()
+        const firstErrorKey = Object.keys(state.errors)[0]
+        if (firstErrorKey) {
+          const target = document.getElementById(firstErrorKey)
+          target?.focus()
         }
       } else if (state.message && !state.success) {
-        // Rate limit or other general errors
         toast.error('Failed to send message', {
           description: state.message,
         })
@@ -37,221 +63,223 @@ export function ContactForm() {
     }
   }, [state, isPending])
 
-  const hasErrors = state?.errors && Object.keys(state.errors).length > 0
+  const hasErrors = Boolean(state?.errors && Object.keys(state.errors).length > 0)
+  const errorSummaryId = hasErrors ? 'contact-form-errors' : undefined
+  const getErrorMessage = (field: string) => state?.errors?.[field]?.[0]
 
   return (
-    <Item asChild className="block border-none rounded-none p-0 gap-0 text-base">
-      <section className="space-y-10">
-        <div className="flex flex-col items-center text-center gap-4">
-          <div className="flex flex-col items-center gap-3">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              {contactFormData.heading}
-            </h2>
-            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl text-balance">
+    <SectionContainer aria-labelledby={headingId}>
+      <ItemGroup className="gap-10">
+        <Item
+          className="flex w-full flex-col items-center border-0 p-0 text-center"
+          aria-labelledby={headingId}
+        >
+          <ItemContent className="max-w-2xl items-center gap-3 text-center">
+            <ItemTitle id={headingId} className="justify-center">
+              <span className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+                {contactFormData.heading}
+              </span>
+            </ItemTitle>
+            <ItemDescription className="text-base text-muted-foreground sm:text-lg">
               {contactFormData.description}
-            </p>
-          </div>
-        </div>
+            </ItemDescription>
+          </ItemContent>
+        </Item>
 
-        <div className="mx-auto max-w-2xl">
-          {/* Screen reader announcement for form status */}
-          <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
-            {isPending && 'Form is submitting, please wait'}
-            {state?.success && !isPending && state.message}
-          </div>
+        <Item className="w-full flex-col">
+          <Item
+            variant="outline"
+            className="mx-auto flex w-full max-w-2xl flex-col gap-6 rounded-2xl border border-border/70 bg-background/80 p-6 shadow-xs md:p-8"
+          >
+            <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+              {isPending && 'Form is submitting, please wait'}
+              {state?.success && !isPending && state.message}
+            </div>
 
-          {/* Error summary for accessibility */}
-          {hasErrors && state?.errors && (
-            <Alert
-              variant="destructive"
-              role="alert"
-              aria-live="assertive"
-              className="mb-6"
-              tabIndex={-1}
+            {hasErrors && state?.errors ? (
+              <Alert
+                id={errorSummaryId}
+                variant="destructive"
+                role="alert"
+                aria-live="assertive"
+                tabIndex={-1}
+              >
+                <AlertCircle className="size-4" aria-hidden="true" />
+                <AlertTitle>Please fix the following errors</AlertTitle>
+                <AlertDescription>
+                  <ul className="mt-2 space-y-1 text-left">
+                    {Object.entries(state.errors).map(([field, messages]) => {
+                      const label = contactFieldLabels[field] ?? field
+                      return (
+                        <li key={field}>
+                          <a href={`#${field}`} className="underline hover:no-underline">
+                            {label}: {messages?.[0]}
+                          </a>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            ) : null}
+
+            <form
+              action={formAction}
+              className="space-y-6"
+              aria-describedby={errorSummaryId}
+              noValidate
             >
-              <AlertCircle className="size-4" aria-hidden="true" />
-              <AlertTitle>Please fix the following errors</AlertTitle>
-              <AlertDescription>
-                <ul className="list-disc list-inside space-y-1 mt-2">
-                  {Object.entries(state.errors).map(([field, messages]) => (
-                    <li key={field}>
-                      <a
-                        href={`#${field}`}
-                        className="underline hover:no-underline"
+              <FieldSet disabled={isPending}>
+                <FieldDescription className="sr-only">
+                  All fields marked with an asterisk are required.
+                </FieldDescription>
+                <FieldGroup className="grid gap-6 sm:grid-cols-2">
+                  <Field data-invalid={Boolean(getErrorMessage('fullName'))}>
+                    <FieldLabel htmlFor="fullName">
+                      Full Name <span className="text-destructive" aria-hidden="true">*</span>
+                    </FieldLabel>
+                    <FieldContent>
+                      <Input
+                        id="fullName"
+                        name="fullName"
+                        type="text"
+                        placeholder="John Doe"
+                        required
+                        aria-required="true"
+                        aria-invalid={Boolean(getErrorMessage('fullName'))}
+                        aria-describedby={getErrorMessage('fullName') ? 'fullName-error' : undefined}
+                      />
+                      <FieldError id="fullName-error">
+                        {getErrorMessage('fullName')}
+                      </FieldError>
+                    </FieldContent>
+                  </Field>
+
+                  <Field data-invalid={Boolean(getErrorMessage('email'))}>
+                    <FieldLabel htmlFor="email">
+                      Email <span className="text-destructive" aria-hidden="true">*</span>
+                    </FieldLabel>
+                    <FieldContent>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        placeholder="john@example.com"
+                        required
+                        aria-required="true"
+                        aria-invalid={Boolean(getErrorMessage('email'))}
+                        aria-describedby={getErrorMessage('email') ? 'email-error' : undefined}
+                      />
+                      <FieldError id="email-error">{getErrorMessage('email')}</FieldError>
+                    </FieldContent>
+                  </Field>
+
+                  <Field data-invalid={Boolean(getErrorMessage('companyName'))}>
+                    <FieldLabel htmlFor="companyName">Company Name (Optional)</FieldLabel>
+                    <FieldContent>
+                      <Input
+                        id="companyName"
+                        name="companyName"
+                        type="text"
+                        placeholder="Acme Inc."
+                        aria-invalid={Boolean(getErrorMessage('companyName'))}
+                        aria-describedby={
+                          getErrorMessage('companyName') ? 'companyName-error' : undefined
+                        }
+                      />
+                      <FieldError id="companyName-error">
+                        {getErrorMessage('companyName')}
+                      </FieldError>
+                    </FieldContent>
+                  </Field>
+
+                  <Field data-invalid={Boolean(getErrorMessage('phone'))}>
+                    <FieldLabel htmlFor="phone">Phone (Optional)</FieldLabel>
+                    <FieldContent>
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        placeholder="+1 (555) 123-4567"
+                        aria-invalid={Boolean(getErrorMessage('phone'))}
+                        aria-describedby={getErrorMessage('phone') ? 'phone-error' : undefined}
+                      />
+                      <FieldError id="phone-error">{getErrorMessage('phone')}</FieldError>
+                    </FieldContent>
+                  </Field>
+                </FieldGroup>
+
+                <Field data-invalid={Boolean(getErrorMessage('serviceInterest'))}>
+                  <FieldLabel htmlFor="serviceInterest">
+                    Service Interest <span className="text-destructive" aria-hidden="true">*</span>
+                  </FieldLabel>
+                  <FieldContent>
+                    <Select
+                      name="serviceInterest"
+                      defaultValue={defaultServiceInterest}
+                      disabled={isPending}
+                      required
+                    >
+                      <SelectTrigger
+                        id="serviceInterest"
+                        aria-required="true"
+                        aria-invalid={Boolean(getErrorMessage('serviceInterest'))}
+                        aria-describedby={
+                          getErrorMessage('serviceInterest') ? 'serviceInterest-error' : undefined
+                        }
+                        className={Boolean(getErrorMessage('serviceInterest')) ? 'border-destructive' : undefined}
                       >
-                        {field === 'fullName' && 'Full Name'}
-                        {field === 'email' && 'Email'}
-                        {field === 'companyName' && 'Company Name'}
-                        {field === 'phone' && 'Phone'}
-                        {field === 'serviceInterest' && 'Service Interest'}
-                        {field === 'message' && 'Message'}
-                        : {(messages as string[])[0]}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </AlertDescription>
-            </Alert>
-          )}
+                        <SelectValue placeholder="Select a service" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {contactFormData.serviceOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FieldError id="serviceInterest-error">
+                      {getErrorMessage('serviceInterest')}
+                    </FieldError>
+                  </FieldContent>
+                </Field>
 
-          <form action={formAction} className="space-y-6" aria-describedby={hasErrors ? 'form-errors' : undefined}>
-            <div className="grid gap-6 sm:grid-cols-2">
-              {/* Full Name */}
-              <div>
-                <label htmlFor="fullName" className="block text-sm font-medium mb-2">
-                  Full Name
-                  <span className="text-destructive" aria-label="required"> *</span>
-                </label>
-                <Input
-                  ref={state?.errors?.['fullName'] ? firstErrorRef : null}
-                  id="fullName"
-                  name="fullName"
-                  type="text"
-                  placeholder="John Doe"
-                  required
-                  aria-required="true"
-                  aria-invalid={!!state?.errors?.['fullName']}
-                  aria-describedby={state?.errors?.['fullName'] ? 'fullName-error' : undefined}
-                  disabled={isPending}
-                  className={state?.errors?.['fullName'] ? 'border-destructive' : ''}
-                />
-                {state?.errors?.['fullName'] && (
-                  <p id="fullName-error" className="text-sm text-destructive mt-1" role="alert">
-                    {state.errors['fullName'][0]}
-                  </p>
-                )}
-              </div>
+                <Field data-invalid={Boolean(getErrorMessage('message'))}>
+                  <FieldLabel htmlFor="message">
+                    Message <span className="text-destructive" aria-hidden="true">*</span>
+                  </FieldLabel>
+                  <FieldContent>
+                    <Textarea
+                      id="message"
+                      name="message"
+                      placeholder="Tell us about your project..."
+                      rows={6}
+                      required
+                      aria-required="true"
+                      aria-invalid={Boolean(getErrorMessage('message'))}
+                      aria-describedby={getErrorMessage('message') ? 'message-error' : undefined}
+                    />
+                    <FieldError id="message-error">{getErrorMessage('message')}</FieldError>
+                  </FieldContent>
+                </Field>
 
-              {/* Email */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium mb-2">
-                  Email
-                  <span className="text-destructive" aria-label="required"> *</span>
-                </label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="john@example.com"
-                  required
-                  aria-required="true"
-                  aria-invalid={!!state?.errors?.['email']}
-                  aria-describedby={state?.errors?.['email'] ? 'email-error' : undefined}
-                  disabled={isPending}
-                  className={state?.errors?.['email'] ? 'border-destructive' : ''}
-                />
-                {state?.errors?.['email'] && (
-                  <p id="email-error" className="text-sm text-destructive mt-1" role="alert">
-                    {state.errors['email'][0]}
-                  </p>
-                )}
-              </div>
+                <Field orientation="responsive">
+                  <Checkbox id="marketingOptIn" name="marketingOptIn" value="true" />
+                  <FieldContent>
+                    <FieldLabel htmlFor="marketingOptIn">
+                      {contactFormData.marketingOptInLabel}
+                    </FieldLabel>
+                    <FieldDescription>{contactFormData.privacyNote}</FieldDescription>
+                  </FieldContent>
+                </Field>
+              </FieldSet>
 
-              {/* Company Name */}
-              <div>
-                <label htmlFor="companyName" className="block text-sm font-medium mb-2">
-                  Company Name (Optional)
-                </label>
-                <Input
-                  id="companyName"
-                  name="companyName"
-                  type="text"
-                  placeholder="Acme Inc."
-                  aria-invalid={!!state?.errors?.['companyName']}
-                  aria-describedby={state?.errors?.['companyName'] ? 'companyName-error' : undefined}
-                  disabled={isPending}
-                  className={state?.errors?.['companyName'] ? 'border-destructive' : ''}
-                />
-                {state?.errors?.['companyName'] && (
-                  <p id="companyName-error" className="text-sm text-destructive mt-1" role="alert">
-                    {state.errors['companyName'][0]}
-                  </p>
-                )}
-              </div>
-
-              {/* Phone */}
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium mb-2">
-                  Phone (Optional)
-                </label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  placeholder="+1 (555) 123-4567"
-                  aria-invalid={!!state?.errors?.['phone']}
-                  aria-describedby={state?.errors?.['phone'] ? 'phone-error' : undefined}
-                  disabled={isPending}
-                  className={state?.errors?.['phone'] ? 'border-destructive' : ''}
-                />
-                {state?.errors?.['phone'] && (
-                  <p id="phone-error" className="text-sm text-destructive mt-1" role="alert">
-                    {state.errors['phone'][0]}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Service Interest */}
-            <div>
-              <label htmlFor="serviceInterest" className="block text-sm font-medium mb-2">
-                Service Interest
-                <span className="text-destructive" aria-label="required"> *</span>
-              </label>
-              <Select name="serviceInterest" defaultValue="website_build" disabled={isPending} required>
-                <SelectTrigger
-                  id="serviceInterest"
-                  aria-required="true"
-                  aria-invalid={!!state?.errors?.['serviceInterest']}
-                  aria-describedby={state?.errors?.['serviceInterest'] ? 'serviceInterest-error' : undefined}
-                  className={state?.errors?.['serviceInterest'] ? 'border-destructive' : ''}
-                >
-                  <SelectValue placeholder="Select a service" />
-                </SelectTrigger>
-                <SelectContent>
-                  {contactFormData.serviceOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {state?.errors?.['serviceInterest'] && (
-                <p id="serviceInterest-error" className="text-sm text-destructive mt-1" role="alert">
-                  {state.errors['serviceInterest'][0]}
-                </p>
-              )}
-            </div>
-
-            {/* Message */}
-            <div>
-              <label htmlFor="message" className="block text-sm font-medium mb-2">
-                Message
-                <span className="text-destructive" aria-label="required"> *</span>
-              </label>
-              <Textarea
-                id="message"
-                name="message"
-                placeholder="Tell us about your project..."
-                rows={6}
-                required
-                aria-required="true"
-                aria-invalid={!!state?.errors?.['message']}
-                aria-describedby={state?.errors?.['message'] ? 'message-error' : undefined}
-                disabled={isPending}
-                className={state?.errors?.['message'] ? 'border-destructive' : ''}
-              />
-              {state?.errors?.['message'] && (
-                <p id="message-error" className="text-sm text-destructive mt-1" role="alert">
-                  {state.errors['message'][0]}
-                </p>
-              )}
-            </div>
-
-            <ContactFormSubmitButton />
-          </form>
-        </div>
-      </section>
-    </Item>
+              <ContactFormSubmitButton label={contactFormData.submitLabel} />
+            </form>
+          </Item>
+        </Item>
+      </ItemGroup>
+    </SectionContainer>
   )
 }

@@ -13,7 +13,50 @@ export const updateProfileSchema = z.object({
   region: z.string().max(100).default(''),
   postal_code: z.string().max(20).default(''),
   country: z.string().max(100).default(''),
-  marketing_opt_in: z.boolean().default(false),
 })
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>
+
+export const appearanceOptions = ['system', 'light', 'dark'] as const
+export const languageOptions = ['en', 'fr'] as const
+export const timezoneOptions = [
+  'UTC',
+  'America/Toronto',
+  'America/Los_Angeles',
+  'Europe/London',
+  'Asia/Tokyo',
+] as const
+
+export const userPreferencesRowSchema = z.object({
+  profile_id: z.string().uuid(),
+  email_notifications: z.boolean(),
+  sms_notifications: z.boolean(),
+  marketing_opt_in: z.boolean(),
+  appearance: z.enum(appearanceOptions),
+  language: z.string().min(2).max(10),
+  timezone: z.string().min(1).max(100),
+  created_at: z.string(),
+  updated_at: z.string(),
+})
+
+export type UserPreferences = z.infer<typeof userPreferencesRowSchema>
+
+export const defaultUserPreferences: Omit<UserPreferences, 'profile_id' | 'created_at' | 'updated_at'> = {
+  email_notifications: true,
+  sms_notifications: false,
+  marketing_opt_in: false,
+  appearance: 'system',
+  language: 'en',
+  timezone: 'UTC',
+}
+
+export const updatePreferencesSchema = z.object({
+  email_notifications: z.boolean().default(true),
+  sms_notifications: z.boolean().default(false),
+  marketing_opt_in: z.boolean().default(false),
+  appearance: z.enum(appearanceOptions),
+  language: z.enum(languageOptions),
+  timezone: z.enum(timezoneOptions),
+})
+
+export type UpdatePreferencesInput = z.infer<typeof updatePreferencesSchema>

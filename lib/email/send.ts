@@ -2,9 +2,11 @@ import 'server-only'
 
 import { resend } from './client'
 import * as templates from './templates'
+import * as leadTemplates from './lead-templates'
 import { siteConfig } from '../config/site.config'
 
 const FROM_EMAIL = process.env['RESEND_FROM_EMAIL'] || 'noreply@example.com'
+const ADMIN_EMAIL = process.env['ADMIN_EMAIL'] || 'admin@zenithsites.ca'
 
 interface SendEmailOptions {
   to: string
@@ -13,7 +15,7 @@ interface SendEmailOptions {
   text: string
 }
 
-async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
+export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
   // Check if RESEND_API_KEY is configured
   if (!process.env['RESEND_API_KEY']) {
     console.warn('RESEND_API_KEY not configured - email not sent')
@@ -121,4 +123,27 @@ export async function sendOTPEmail(
   const template = templates.otpEmail(otpCode, message, subject)
   const result = await sendEmail({ to, ...template })
   return result.success
+}
+
+export async function sendNewLeadNotification(leadData: {
+  fullName: string
+  email: string
+  companyName?: string
+  phone?: string
+  serviceInterest: string
+  message: string
+  utmSource?: string
+  utmMedium?: string
+  utmCampaign?: string
+}): Promise<{ success: boolean; data?: unknown; error?: unknown }> {
+  const template = leadTemplates.newLeadNotificationEmail(leadData)
+  return sendEmail({ to: ADMIN_EMAIL, ...template })
+}
+
+export async function sendLeadConfirmation(
+  to: string,
+  leadName: string
+): Promise<{ success: boolean; data?: unknown; error?: unknown }> {
+  const template = leadTemplates.leadConfirmationEmail(leadName)
+  return sendEmail({ to, ...template })
 }

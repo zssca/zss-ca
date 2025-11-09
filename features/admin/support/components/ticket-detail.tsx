@@ -13,10 +13,11 @@ import {
   FieldLabel,
   FieldSet,
 } from '@/components/ui/field'
-import { ChevronDown, MessageSquare } from 'lucide-react'
+import { ChevronDown, MessageSquare, Lock } from 'lucide-react'
 import { ReplyForm } from './reply-form'
 import { UpdateStatusButton } from './update-status-button'
 import type { TicketWithReplies } from '../api/queries'
+import type { TicketPriority, TicketStatus } from '@/lib/types/database-aliases'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
   Item,
@@ -57,16 +58,16 @@ export function TicketDetail({ ticket, currentUserId: _currentUserId, isAdmin }:
             <div className="space-y-1">
               <ItemTitle>{ticket.subject}</ItemTitle>
               <ItemDescription>
-                Created by {ticket.profile.contact_name || ticket.profile.contact_email} on{' '}
+                Created by {ticket.profile?.contact_name || ticket.profile?.contact_email || 'Unknown'} on{' '}
                 {createdAt.toLocaleDateString()} at {createdAt.toLocaleTimeString()}
               </ItemDescription>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Badge variant={getTicketPriorityVariant(ticket.priority)}>
-                {getTicketPriorityLabel(ticket.priority)}
+              <Badge variant={getTicketPriorityVariant(ticket.priority as TicketPriority)}>
+                {getTicketPriorityLabel(ticket.priority as TicketPriority)}
               </Badge>
-              <Badge variant={getTicketStatusVariant(ticket.status)}>
-                {getTicketStatusLabel(ticket.status)}
+              <Badge variant={getTicketStatusVariant(ticket.status as TicketStatus)}>
+                {getTicketStatusLabel(ticket.status as TicketStatus)}
               </Badge>
             </div>
           </div>
@@ -80,12 +81,12 @@ export function TicketDetail({ ticket, currentUserId: _currentUserId, isAdmin }:
             <FieldGroup className="space-y-4">
               <Field>
                 <FieldLabel>Category</FieldLabel>
-                <FieldDescription>{formatCategoryLabel(ticket.category)}</FieldDescription>
+                <FieldDescription>{formatCategoryLabel(ticket.category || '')}</FieldDescription>
               </Field>
               <Field>
                 <FieldLabel>Message</FieldLabel>
                 <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                  {ticket.message}
+                  {String(ticket['message'])}
                 </p>
               </Field>
               {isAdmin && (
@@ -118,18 +119,25 @@ export function TicketDetail({ ticket, currentUserId: _currentUserId, isAdmin }:
               {ticket.replies.map((reply) => {
                 const replyCreatedAt = new Date(reply.created_at)
                 const isFromAdmin = reply.profile.role === 'admin'
+                const isInternalNote = reply.is_internal
 
                 return (
                   <Item
                     key={reply.id}
                     variant="outline"
-                    className={isFromAdmin ? 'border-primary' : ''}
+                    className={isInternalNote ? 'border-dashed bg-muted/50' : isFromAdmin ? 'border-primary' : ''}
                   >
                     <ItemContent>
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <ItemTitle>{reply.profile.contact_name || reply.profile.contact_email}</ItemTitle>
                           {isFromAdmin && <Badge variant="outline">Support Team</Badge>}
+                          {isInternalNote && (
+                            <Badge variant="secondary" className="flex items-center gap-1">
+                              <Lock className="h-3 w-3" />
+                              Internal Note
+                            </Badge>
+                          )}
                         </div>
                         <ItemDescription>
                           {replyCreatedAt.toLocaleDateString()} at {replyCreatedAt.toLocaleTimeString()}
@@ -145,7 +153,7 @@ export function TicketDetail({ ticket, currentUserId: _currentUserId, isAdmin }:
         </Collapsible>
       )}
 
-      {canReply && <ReplyForm ticketId={ticket.id} />}
+      {canReply && <ReplyForm ticketId={ticket.id} isAdmin={isAdmin} />}
 
       {!canReply && (
         <Alert>

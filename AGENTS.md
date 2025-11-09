@@ -20,4 +20,4 @@
 
 ## 🚫 Never Edit
 
-**Never edit:** `components/ui/*`, `app/globals.css`, `lib/types/database.types.ts`
+**Never edit:** `components/ui/*`, `app/globals.css`

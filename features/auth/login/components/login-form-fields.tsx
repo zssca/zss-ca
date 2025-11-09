@@ -51,16 +51,16 @@ export function LoginFormFields({
 }: LoginFormFieldsProps): React.JSX.Element {
   const emailHintId = 'login-email-hint'
   const passwordHintId = 'login-password-hint'
-  const emailServerErrorId = state?.fieldErrors?.email ? 'login-email-error' : null
+  const emailServerErrorId = state?.fieldErrors?.['email'] ? 'login-email-error' : null
   const emailClientErrorId = emailError ? 'login-email-error-client' : null
-  const passwordErrorId = state?.fieldErrors?.password ? 'login-password-error' : null
+  const passwordErrorId = state?.fieldErrors?.['password'] ? 'login-password-error' : null
 
   return (
     <form action={formAction} className="space-y-6" noValidate>
       <input type="hidden" name="remember" value={rememberMe ? 'on' : 'off'} />
 
       <FieldGroup className="gap-4">
-        <Field data-invalid={!!(state?.fieldErrors?.email) || !!emailError}>
+        <Field data-invalid={!!(state?.fieldErrors?.['email']) || !!emailError}>
           <FieldLabel htmlFor="email">
             Email
             <span className="ml-1 text-destructive" aria-hidden="true">*</span>
@@ -78,7 +78,7 @@ export function LoginFormFields({
               autoComplete="email"
               required
               aria-required="true"
-              aria-invalid={!!(state?.fieldErrors?.email) || !!emailError}
+              aria-invalid={!!(state?.fieldErrors?.['email']) || !!emailError}
               aria-describedby={[
                 emailServerErrorId,
                 emailClientErrorId,
@@ -101,16 +101,16 @@ export function LoginFormFields({
           <FieldDescription id={emailHintId} className="text-xs text-muted-foreground">
             Press <Kbd>Enter</Kbd> to move to password or <Kbd>Esc</Kbd> to clear this field.
           </FieldDescription>
-          {state?.fieldErrors?.email ? (
+          {state?.fieldErrors?.['email'] ? (
             <FieldError
               id="login-email-error"
-              errors={state.fieldErrors.email.map((message) => ({ message }))}
+              errors={state.fieldErrors['email'].map((message) => ({ message }))}
             />
           ) : null}
           {emailError ? <FieldError id="login-email-error-client" errors={[{ message: emailError }]} /> : null}
         </Field>
 
-        <Field data-invalid={!!state?.fieldErrors?.password}>
+        <Field data-invalid={!!state?.fieldErrors?.['password']}>
           <FieldLabel htmlFor="password">
             Password
             <span className="ml-1 text-destructive" aria-hidden="true">*</span>
@@ -127,7 +127,7 @@ export function LoginFormFields({
               autoComplete="current-password"
               required
               aria-required="true"
-              aria-invalid={!!state?.fieldErrors?.password}
+              aria-invalid={!!state?.fieldErrors?.['password']}
               aria-describedby={[
                 passwordErrorId,
                 passwordHintId,
@@ -145,10 +145,10 @@ export function LoginFormFields({
           <FieldDescription id={passwordHintId} className="text-xs text-muted-foreground">
             Press <Kbd>Enter</Kbd> to submit or <Kbd>Esc</Kbd> to clear the password.
           </FieldDescription>
-          {state?.fieldErrors?.password ? (
+          {state?.fieldErrors?.['password'] ? (
             <FieldError
               id="login-password-error"
-              errors={state.fieldErrors.password.map((message) => ({ message }))}
+              errors={state.fieldErrors['password'].map((message) => ({ message }))}
             />
           ) : null}
         </Field>

@@ -1,14 +1,17 @@
 import type { LucideIcon } from 'lucide-react'
 
-export interface HomeIndustry {
+export interface Industry {
   id: string
   name: string
   description: string
   icon: LucideIcon
   iconLabel: string
+  stat: string
+  statHelper: string
 }
 
-export interface HomeIndustriesData {
+export interface IndustriesData {
   heading: string
-  industries: HomeIndustry[]
+  subheading: string
+  industries: Industry[]
 }

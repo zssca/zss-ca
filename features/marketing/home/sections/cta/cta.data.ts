@@ -2,17 +2,22 @@ import { ROUTES } from '@/lib/constants/routes'
 import type { CtaData } from './cta.types'
 
 export const ctaData: CtaData = {
-  heading: 'Ready to Get Started?',
+  heading: 'Ready to launch your next conversion sprint?',
   description:
-    'Join hundreds of Canadian small businesses that trust us with their online presence. Start your subscription today.',
+    'Book a quick strategy session and walk away with a tailored roadmap, pricing breakdown, and launch timeline built for your growth targets.',
   ariaLabel: 'Home page call to action',
+  bullets: [
+    'White-glove onboarding with Canadian strategists',
+    'Unlimited design, copy, and optimization requests',
+    'Security-forward hosting with Canadian residency',
+  ],
   cta: {
     primary: {
-      label: 'View Pricing',
+      label: 'Start my launch plan',
       href: ROUTES.PRICING,
     },
     secondary: {
-      label: 'Contact Us',
+      label: 'Schedule a strategy call',
       href: ROUTES.CONTACT,
     },
   },

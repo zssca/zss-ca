@@ -1,8 +1,10 @@
+import { SectionContainer } from '@/components/layout/shared'
 import { Badge } from '@/components/ui/badge'
 import {
   Item,
   ItemContent,
   ItemDescription,
+  ItemGroup,
   ItemMedia,
   ItemTitle,
 } from '@/components/ui/item'
@@ -10,24 +12,27 @@ import { caseGridData } from './case-grid.data'
 
 export function CaseGrid() {
   return (
-    <Item asChild className="block border-none rounded-none p-0 gap-0 text-base">
-      <section className="space-y-8">
-        <div className="flex flex-col items-center text-center gap-4">
-          <div className="flex flex-col items-center gap-3">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              {caseGridData.heading}
-            </h2>
-          </div>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          {caseGridData.cases.map((item) => (
-            <Item
-              key={item.id}
-              variant="outline"
-              asChild
-              className="h-full flex-col items-start gap-4 rounded-xl bg-background/60 p-6 text-left"
-            >
-              <article aria-labelledby={`case-${item.id}-title`}>
+    <SectionContainer aria-labelledby="case-grid-heading">
+      <ItemGroup className="gap-8">
+        <Item className="flex w-full flex-col items-center border-0 p-0 text-center">
+          <ItemContent className="max-w-3xl items-center gap-3 text-center">
+            <ItemTitle id="case-grid-heading" className="justify-center">
+              <span className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+                {caseGridData.heading}
+              </span>
+            </ItemTitle>
+          </ItemContent>
+        </Item>
+
+        <Item className="w-full flex-col">
+          <ItemGroup className="grid gap-4 md:grid-cols-2" aria-label="Case study grid">
+            {caseGridData.cases.map((item) => (
+              <Item
+                key={item.id}
+                variant="outline"
+                className="flex h-full flex-col items-start gap-4 rounded-xl bg-background/60 p-6 text-left"
+                aria-labelledby={`case-${item.id}-title`}
+              >
                 <div className="flex items-start gap-3">
                   {item.icon ? (
                     <>
@@ -54,11 +59,11 @@ export function CaseGrid() {
                     </Badge>
                   ))}
                 </div>
-              </article>
-            </Item>
-          ))}
-        </div>
-      </section>
-    </Item>
+              </Item>
+            ))}
+          </ItemGroup>
+        </Item>
+      </ItemGroup>
+    </SectionContainer>
   )
 }

@@ -8,6 +8,7 @@ export interface CaseFeaturedData {
   industry: string
   summary: string
   metrics: CaseFeaturedMetrics[]
+  services: string[]
   testimonial: {
     quote: string
     author: string

@@ -6,7 +6,7 @@
 
 **Action Mode:** Identify UI violations and **directly apply fixes** to code. NO documentation or report files—fix violations immediately.
 
-**Mission:** Audit and refactor UI components to strictly follow `docs/stack-patterns/ui.md` patterns without altering primitives. Apply fixes directly without generating reports.
+**Mission:** Audit and refactor UI components to strictly follow `docs/rules/08-ui.md` patterns without altering primitives. Apply fixes directly without generating reports.
 
 ---
 
@@ -63,7 +63,7 @@ mcp__shadcn__get_component_docs({ component: 'changelog' })
 ```
 **Find opportunities to use new components** - Don't assume a component doesn't exist. Check MCP first, especially for newer UI patterns.
 
-## Strict Rules from docs/stack-patterns/ui.md
+## Strict Rules from docs/rules/08-ui.md
 
 ### Rule 0: Semantic Richness Over Repetition
 
@@ -114,7 +114,7 @@ Every shadcn component has required structure. Follow it EXACTLY (CardHeader →
 **Violation = Immediate failure. If you edit a `components/ui/*.tsx` file, STOP and report the error.**
 
 ## Inputs
-- **Pattern rules:** `docs/stack-patterns/ui.md` (source of truth)
+- **Pattern rules:** `docs/rules/08-ui.md` (source of truth)
 - **Component docs:** shadcn MCP tools and https://ui.shadcn.com/docs/changelog
 - **Target files:** Components under `features/**/components/` and shared UI compositions
 - **Detection commands:** 8 automated violation detectors
@@ -132,7 +132,7 @@ Every shadcn component has required structure. Follow it EXACTLY (CardHeader →
    ```
    **If you accidentally target a `components/ui/*.tsx` file, STOP IMMEDIATELY.**
 
-2. **Read `docs/stack-patterns/ui.md`** - Get all rules and approved patterns
+2. **Read `docs/rules/08-ui.md`** - Get all rules and approved patterns
 
 3. **Run all 8 detection commands** - Find violations **ONLY in feature files**:
    - Custom sizing on component slots

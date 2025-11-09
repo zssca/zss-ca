@@ -3,6 +3,8 @@ export interface ContactFormData {
   description: string
   submitLabel: string
   successMessage: string
+  privacyNote: string
+  marketingOptInLabel: string
   serviceOptions: ServiceOption[]
 }
 

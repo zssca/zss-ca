@@ -2,6 +2,13 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { sendOTPEmail } from '@/lib/email/send'
+import { createHash, randomBytes } from 'crypto'
+
+function hashOtp(code: string) {
+  const otp_salt = randomBytes(16).toString('hex')
+  const otp_hash = createHash('sha256').update(`${code}${otp_salt}`).digest('hex')
+  return { otp_hash, otp_salt }
+}
 
 export async function sendOTPForPasswordReset(
   email: string,
@@ -20,13 +27,16 @@ export async function sendOTPForPasswordReset(
   const expiresAt = new Date()
   expiresAt.setMinutes(expiresAt.getMinutes() + 15) // 15 minutes expiry
 
-  const { error: insertError } = await supabase
+  const { otp_hash, otp_salt } = hashOtp(otpCode)
 
+  const { error: insertError } = await supabase
     .from('otp_verification')
     .insert({
       profile_id: profileId,
       email,
       otp_code: otpCode,
+      otp_hash,
+      otp_salt,
       verification_type: 'password_reset',
       expires_at: expiresAt.toISOString(),
     })
@@ -67,13 +77,16 @@ export async function sendOTPForEmailConfirmation(
   const expiresAt = new Date()
   expiresAt.setMinutes(expiresAt.getMinutes() + 30) // 30 minutes expiry for email confirmation
 
-  const { error: insertError } = await supabase
+  const { otp_hash, otp_salt } = hashOtp(otpCode)
 
+  const { error: insertError } = await supabase
     .from('otp_verification')
     .insert({
       profile_id: profileId,
       email,
       otp_code: otpCode,
+      otp_hash,
+      otp_salt,
       verification_type: 'email_confirmation',
       expires_at: expiresAt.toISOString(),
     })

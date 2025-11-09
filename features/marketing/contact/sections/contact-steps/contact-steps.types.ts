@@ -3,6 +3,7 @@ export interface ContactStep {
   label: string
   title: string
   description: string
+  helper?: string
 }
 
 export interface ContactStepsData {

@@ -11,6 +11,8 @@ export const resourcesCategoriesData: ResourcesCategoriesData = {
       description: 'Kickoff checklists, stakeholder templates, and launch communication kits.',
       icon: Rocket,
       iconLabel: 'Launch icon',
+      href: '#launch',
+      linkLabel: 'Open launch tools',
     },
     {
       id: 'convert',
@@ -19,6 +21,8 @@ export const resourcesCategoriesData: ResourcesCategoriesData = {
       description: 'Landing page frameworks, copy prompts, and analytics dashboards.',
       icon: BarChart3,
       iconLabel: 'Conversion icon',
+      href: '#conversion',
+      linkLabel: 'View conversion kits',
     },
     {
       id: 'retain',
@@ -27,6 +31,8 @@ export const resourcesCategoriesData: ResourcesCategoriesData = {
       description: 'Email nurture maps, onboarding guides, and support playbooks.',
       icon: Users,
       iconLabel: 'Retention icon',
+      href: '#retention',
+      linkLabel: 'See retention guides',
     },
   ],
 }

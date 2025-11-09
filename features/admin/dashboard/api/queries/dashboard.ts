@@ -2,7 +2,7 @@ import 'server-only'
 
 import { cache } from 'react'
 import { createClient, requireAuth, requireAdminRole } from '@/lib/supabase'
-import type { TicketStatus, TicketPriority } from '@/lib/types/global.types'
+import type { TicketPriority, TicketStatus } from '@/lib/types/database-aliases'
 
 export interface AdminDashboardStats {
   totalClients: number

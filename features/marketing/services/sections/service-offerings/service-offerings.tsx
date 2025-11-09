@@ -1,3 +1,4 @@
+import { SectionContainer } from '@/components/layout/shared'
 import {
   Item,
   ItemContent,
@@ -11,27 +12,30 @@ import { serviceOfferingsData } from './service-offerings.data'
 
 export function ServiceOfferings() {
   return (
-    <Item asChild className="block border-none rounded-none p-0 gap-0 text-base">
-      <section className="space-y-8">
-        <div className="flex flex-col items-center text-center gap-4">
-          <div className="flex flex-col items-center gap-3">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              {serviceOfferingsData.heading}
-            </h2>
-            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl text-balance">
+    <SectionContainer aria-labelledby="service-offerings-heading">
+      <ItemGroup className="gap-8">
+        <Item className="flex w-full flex-col items-center border-0 p-0 text-center">
+          <ItemContent className="max-w-3xl items-center gap-3 text-center">
+            <ItemTitle id="service-offerings-heading" className="justify-center">
+              <span className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+                {serviceOfferingsData.heading}
+              </span>
+            </ItemTitle>
+            <ItemDescription className="text-base text-muted-foreground sm:text-lg">
               We own the full lifecycle so you have one partner for everything web.
-            </p>
-          </div>
-        </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          {serviceOfferingsData.cards.map((card) => (
-            <Item
-              key={card.id}
-              variant="outline"
-              asChild
-              className="h-full flex-col gap-4 rounded-xl bg-background/60 p-6 text-left"
-            >
-              <article aria-labelledby={`service-offering-${card.id}`}>
+            </ItemDescription>
+          </ItemContent>
+        </Item>
+
+        <Item className="w-full flex-col">
+          <ItemGroup className="grid gap-4 md:grid-cols-3" aria-label="Service offerings">
+            {serviceOfferingsData.cards.map((card) => (
+              <Item
+                key={card.id}
+                variant="outline"
+                className="flex h-full flex-col gap-4 rounded-xl bg-background/60 p-6 text-left"
+                aria-labelledby={`service-offering-${card.id}`}
+              >
                 <ItemHeader className="items-start gap-3">
                   {card.icon ? (
                     <>
@@ -44,8 +48,10 @@ export function ServiceOfferings() {
                   <ItemTitle id={`service-offering-${card.id}`}>{card.title}</ItemTitle>
                 </ItemHeader>
                 <ItemContent className="gap-3">
-                  <p className="text-sm text-muted-foreground">{card.summary}</p>
-                  <ItemGroup className="gap-2">
+                  <ItemDescription className="line-clamp-none text-sm text-muted-foreground">
+                    {card.summary}
+                  </ItemDescription>
+                  <ItemGroup className="gap-2" aria-label={`${card.title} inclusions`}>
                     {card.features.map((feature) => (
                       <Item
                         key={feature.title}
@@ -64,11 +70,11 @@ export function ServiceOfferings() {
                     ))}
                   </ItemGroup>
                 </ItemContent>
-              </article>
-            </Item>
-          ))}
-        </div>
-      </section>
-    </Item>
+              </Item>
+            ))}
+          </ItemGroup>
+        </Item>
+      </ItemGroup>
+    </SectionContainer>
   )
 }

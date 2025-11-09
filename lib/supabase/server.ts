@@ -2,6 +2,7 @@ import 'server-only'
 import { createServerClient } from '@supabase/ssr'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
+import { getServerSupabaseEnvOrThrow } from '@/lib/supabase/env'
 import type { Database } from '@/lib/types/database.types'
 
 interface CreateClientOptions {
@@ -12,13 +13,14 @@ export async function createClient(
   options: CreateClientOptions = {},
 ): Promise<SupabaseClient<Database>> {
   const cookieStore = await cookies()
+  const { url, anonKey } = getServerSupabaseEnvOrThrow('createServerClient')
 
   const cookieOptions =
     typeof options.cookieMaxAge === 'number' ? { maxAge: options.cookieMaxAge } : undefined
 
   return createServerClient<Database>(
-    process.env['NEXT_PUBLIC_SUPABASE_URL']!,
-    process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!,
+    url,
+    anonKey,
     {
       cookieOptions,
       cookies: {

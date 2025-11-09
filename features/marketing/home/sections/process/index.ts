@@ -1,3 +1,3 @@
-export { HomeProcess } from './process'
-export { homeProcessData } from './process.data'
-export type { HomeProcessStep, HomeProcessData } from './process.types'
+export { Process } from './process'
+export { processData } from './process.data'
+export type { ProcessStep, ProcessData } from './process.types'

@@ -30,11 +30,11 @@ export function SignupEmailField({
   emailError,
   onEmailErrorChange,
 }: SignupEmailFieldProps): React.JSX.Element {
-  const emailServerErrorId = fieldErrors?.email ? 'signup-email-error' : null
+  const emailServerErrorId = fieldErrors?.['email'] ? 'signup-email-error' : null
   const emailClientErrorId = emailError ? 'signup-email-error-client' : null
 
   return (
-    <Field data-invalid={!!fieldErrors?.email || !!emailError}>
+    <Field data-invalid={!!fieldErrors?.['email'] || !!emailError}>
       <FieldLabel htmlFor="email">
         Email
         <span className="ml-1 text-destructive" aria-hidden="true">*</span>
@@ -52,7 +52,7 @@ export function SignupEmailField({
           autoComplete="email"
           required
           aria-required="true"
-          aria-invalid={!!fieldErrors?.email || !!emailError}
+          aria-invalid={!!fieldErrors?.['email'] || !!emailError}
           aria-describedby={[
             emailServerErrorId,
             emailClientErrorId,
@@ -75,10 +75,10 @@ export function SignupEmailField({
       <FieldDescription id={EMAIL_HINT_ID} className="text-xs text-muted-foreground">
         Use your work email to invite teammates automatically. Press <Kbd>Enter</Kbd> to move to the next field.
       </FieldDescription>
-      {fieldErrors?.email ? (
+      {fieldErrors?.['email'] ? (
         <FieldError
           id="signup-email-error"
-          errors={fieldErrors.email.map((message) => ({ message }))}
+          errors={fieldErrors['email'].map((message) => ({ message }))}
         />
       ) : null}
       {emailError ? (

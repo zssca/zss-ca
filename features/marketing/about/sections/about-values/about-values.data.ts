@@ -2,29 +2,33 @@ import { LifeBuoy, Flag, PiggyBank, ShieldCheck } from 'lucide-react'
 import type { AboutValuesData } from './about-values.types'
 
 export const aboutValuesData: AboutValuesData = {
-  title: 'Why teams choose us',
+  title: 'Values that guide every engagement',
   values: [
     {
-      title: 'Predictable pricing',
-      description: 'No hidden fees or surprise costs—just a subscription that covers design, development, and care.',
+      title: 'Transparent partnership',
+      description: 'Flat-rate subscriptions, shared roadmaps, and weekly demos keep everyone aligned.',
+      helper: 'Average variance between estimate & delivery: <3%',
       icon: PiggyBank,
       iconLabel: 'Predictable pricing icon',
     },
     {
-      title: 'Canadian-focused',
-      description: 'Built for Canadian businesses by a team that understands the market and compliance requirements.',
+      title: 'Canadian-first mindset',
+      description: 'Accessibility, bilingual content, and data residency tailored to Canadian regulations.',
+      helper: 'WCAG 2.1 AA audits run each quarter',
       icon: Flag,
       iconLabel: 'Canadian focus icon',
     },
     {
-      title: 'Professional quality',
-      description: 'Enterprise-level patterns, accessible design, and engineering rigor behind every launch.',
+      title: 'Craft backed by rigor',
+      description: 'Design systems, QA scripts, and observability baked into every deploy.',
+      helper: 'Lighthouse scores average 95+',
       icon: ShieldCheck,
       iconLabel: 'Quality shield icon',
     },
     {
-      title: 'Dedicated support',
-      description: 'Real humans ready to ship updates, revisions, and improvements without fuss.',
+      title: 'Care without ticket walls',
+      description: 'Direct collaboration via Slack with the people actually shipping your work.',
+      helper: 'Median first response: 1h 42m',
       icon: LifeBuoy,
       iconLabel: 'Support icon',
     },

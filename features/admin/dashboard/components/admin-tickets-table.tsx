@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import type {
   ColumnDef,
@@ -16,7 +16,6 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   Table,
@@ -28,8 +27,9 @@ import {
 } from '@/components/ui/table'
 import { ROUTES } from '@/lib/constants/routes'
 import { getTicketStatusVariant, getTicketPriorityVariant, getTicketStatusLabel, getTicketPriorityLabel } from '@/features/admin/support/utils'
-import type { TicketStatus, TicketPriority } from '@/lib/types/global.types'
+import type { TicketPriority, TicketStatus } from '@/lib/types/database-aliases'
 import { DataTableViewOptions } from './data-table-view-options'
+import { DataTablePagination } from './data-table-pagination'
 
 interface Ticket {
   id: string
@@ -53,6 +53,16 @@ const columns: ColumnDef<Ticket>[] = [
         {row.getValue<string>('subject')}
       </Link>
     ),
+    filterFn: (row, id, value) => {
+      const term = String(value ?? '').toLowerCase()
+      if (!term) {
+        return true
+      }
+      const subject = row.getValue<string>(id)?.toLowerCase() ?? ''
+      const company = row.original.profile?.company_name?.toLowerCase() ?? ''
+      const contact = row.original.profile?.contact_name?.toLowerCase() ?? ''
+      return [subject, company, contact].some((field) => field.includes(term))
+    },
   },
   {
     accessorKey: 'profile.company_name',
@@ -85,15 +95,13 @@ const columns: ColumnDef<Ticket>[] = [
 ]
 
 export function AdminTicketsTable({ tickets }: TicketsTableProps): React.JSX.Element {
-  const memoisedData = useMemo(() => tickets, [tickets])
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({})
-  const [search, setSearch] = useState('')
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
-    data: memoisedData,
+    data: tickets,
     columns,
     state: {
       sorting,
@@ -114,17 +122,28 @@ export function AdminTicketsTable({ tickets }: TicketsTableProps): React.JSX.Ele
     },
   })
 
-  const subjectColumn = table.getColumn('subject')
-  if (subjectColumn) {
-    subjectColumn.setFilterValue(search)
+  const searchFilter = columnFilters.find((filter) => filter.id === 'subject')
+  const searchValue = typeof searchFilter?.value === 'string' ? searchFilter.value : ''
+
+  const handleSearchChange = (value: string) => {
+    setColumnFilters((previousFilters) => {
+      const withoutSearch = previousFilters.filter((filter) => filter.id !== 'subject')
+      if (!value) {
+        return withoutSearch
+      }
+      return [
+        ...withoutSearch,
+        { id: 'subject', value },
+      ]
+    })
   }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <Input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
+          value={searchValue}
+          onChange={(event) => handleSearchChange(event.target.value)}
           placeholder="Search by subject..."
           className="w-full lg:max-w-xs"
         />
@@ -168,29 +187,7 @@ export function AdminTicketsTable({ tickets }: TicketsTableProps): React.JSX.Ele
         </Table>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-sm text-muted-foreground">
-          {table.getFilteredRowModel().rows.length} results
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+      <DataTablePagination table={table} />
     </div>
   )
 }

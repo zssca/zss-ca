@@ -1,25 +1,28 @@
 import type { AboutServicesData } from './about-services.types'
 
 export const aboutServicesData: AboutServicesData = {
-  title: 'What we do',
+  title: 'How we plug into your team',
   items: [
     {
       id: 'subscription',
-      title: 'Subscription-based website development',
+      title: 'Managed website subscription',
       description:
-        'We design, build, and maintain professional static websites on a monthly subscription. No surprise invoices—just predictable pricing aligned with your pace of growth.',
+        'Strategy, copy, design, development, hosting, and analytics bundled into one predictable monthly invoice.',
+      helper: 'Best for teams that want to move fast without hiring in-house.',
     },
     {
       id: 'support',
-      title: 'Ongoing support & maintenance',
+      title: 'Always-on optimization pod',
       description:
-        'Your subscription includes updates, security patches, analytics reporting, and a dedicated Canadian support team to keep your site current.',
+        'Dedicated PM, designer, and engineer who own the backlog, QA deploys, and report on KPIs every month.',
+      helper: 'Includes Slack channel + shared dashboards.',
     },
     {
-      id: 'design',
-      title: 'Strategic design partnerships',
+      id: 'advisory',
+      title: 'Leadership advisory',
       description:
-        'Every project starts with research and strategy so your website reflects your brand, resonates with customers, and is ready to scale with your business.',
+        'Quarterly roadmapping, experimentation planning, and executive-ready reporting to align revenue teams.',
+      helper: 'Optional add-on for growth-stage organizations.',
     },
   ],
 }

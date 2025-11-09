@@ -14,12 +14,12 @@ import {
   FieldSet,
 } from '@/components/ui/field'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemHeader,
+  ItemTitle,
+} from '@/components/ui/item'
 import { createTicketSchema, type CreateTicketInput } from '../api/schema'
 import { createTicketAction } from '../api/mutations'
 import { ROUTES } from '@/lib/constants/routes'
@@ -57,12 +57,12 @@ export function CreateTicketForm(): React.JSX.Element {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Create Support Ticket</CardTitle>
-        <CardDescription>We&apos;ll respond to your ticket as soon as possible</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <Item variant="outline" className="flex flex-col gap-4 p-6">
+      <ItemHeader className="flex-col items-start gap-2">
+        <ItemTitle>Create Support Ticket</ItemTitle>
+        <ItemDescription>We&apos;ll respond to your ticket as soon as possible</ItemDescription>
+      </ItemHeader>
+      <ItemContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FieldSet className="space-y-4">
@@ -100,7 +100,7 @@ export function CreateTicketForm(): React.JSX.Element {
             </div>
           </form>
         </Form>
-      </CardContent>
-    </Card>
+      </ItemContent>
+    </Item>
   )
 }

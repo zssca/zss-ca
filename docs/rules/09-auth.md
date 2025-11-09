@@ -268,7 +268,7 @@ export function UserProfile() {
 **Implementation:**
 
 ```ts
-// ✅ CORRECT - lib/supabase/middleware.ts (helper function)
+// ✅ CORRECT - lib/supabase/session-proxy.ts (helper function)
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -308,7 +308,7 @@ export async function updateSession(request: NextRequest) {
 ```ts
 // ✅ CORRECT - proxy.ts entry point (Next.js 16)
 import { type NextRequest } from 'next/server'
-import { updateSession } from '@/lib/supabase/middleware'
+import { updateSession } from '@/lib/supabase/session-proxy'
 
 export async function proxy(request: NextRequest) {
   return await updateSession(request)
@@ -2671,7 +2671,7 @@ rg "'use server'" --type ts -A 20 \
   | grep -v "auth.getClaims()"
 
 # Find proxy/middleware not calling getUser()
-rg "createServerClient" proxy.ts middleware.ts lib/supabase/middleware.ts \
+rg "createServerClient" proxy.ts middleware.ts lib/supabase/session-proxy.ts \
   | xargs -I{} sh -c "grep -L 'auth.getUser()' {}"
 
 # Find protected routes not using redirect()

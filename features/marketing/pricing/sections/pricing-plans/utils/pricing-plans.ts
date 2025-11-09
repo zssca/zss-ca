@@ -18,6 +18,9 @@ export function getPlanFeatures(plan: PricingPlan): PlanFeature[] {
 }
 
 export function getMonthlyRate(plan: PricingPlan): number {
-  const cents = plan.setup_fee_cents ?? 0
-  return cents / 100
+  return plan.monthlyPrice ?? 0
+}
+
+export function getYearlyRate(plan: PricingPlan): number {
+  return plan.yearlyPrice ?? 0
 }

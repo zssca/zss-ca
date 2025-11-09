@@ -1,8 +1,12 @@
+import Link from 'next/link'
+import { SectionContainer } from '@/components/layout/shared'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Item,
   ItemContent,
   ItemDescription,
+  ItemGroup,
   ItemMedia,
   ItemTitle,
 } from '@/components/ui/item'
@@ -10,24 +14,27 @@ import { resourcesCategoriesData } from './resources-categories.data'
 
 export function ResourcesCategories() {
   return (
-    <Item asChild className="block border-none rounded-none p-0 gap-0 text-base">
-      <section className="space-y-8">
-        <div className="flex flex-col items-center text-center gap-4">
-          <div className="flex flex-col items-center gap-3">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              {resourcesCategoriesData.heading}
-            </h2>
-          </div>
-        </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          {resourcesCategoriesData.categories.map((category) => (
-            <Item
-              key={category.id}
-              variant="outline"
-              asChild
-              className="h-full flex-col items-start gap-4 rounded-xl bg-background/60 p-6 text-left"
-            >
-              <article aria-labelledby={`resource-category-${category.id}`}>
+    <SectionContainer aria-labelledby="resource-categories-heading">
+      <ItemGroup className="gap-8">
+        <Item className="flex w-full flex-col items-center border-0 p-0 text-center">
+          <ItemContent className="max-w-3xl items-center gap-3 text-center">
+            <ItemTitle id="resource-categories-heading" className="justify-center">
+              <span className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+                {resourcesCategoriesData.heading}
+              </span>
+            </ItemTitle>
+          </ItemContent>
+        </Item>
+
+        <Item className="w-full flex-col">
+          <ItemGroup className="grid gap-4 md:grid-cols-3" aria-label="Resource categories">
+            {resourcesCategoriesData.categories.map((category) => (
+              <Item
+                key={category.id}
+                variant="outline"
+                className="flex h-full flex-col items-start gap-4 rounded-xl bg-background/60 p-6 text-left"
+                aria-labelledby={`resource-category-${category.id}`}
+              >
                 <div className="flex items-start gap-3">
                   {category.icon ? (
                     <>
@@ -49,11 +56,16 @@ export function ResourcesCategories() {
                     </ItemDescription>
                   </ItemContent>
                 </div>
-              </article>
-            </Item>
-          ))}
-        </div>
-      </section>
-    </Item>
+                {category.href ? (
+                  <Button asChild size="sm" variant="outline">
+                    <Link href={category.href}>{category.linkLabel ?? 'View resources'}</Link>
+                  </Button>
+                ) : null}
+              </Item>
+            ))}
+          </ItemGroup>
+        </Item>
+      </ItemGroup>
+    </SectionContainer>
   )
 }

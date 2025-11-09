@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useCallback, useEffect, useMemo, useState } from 'react'
+import { startTransition, useActionState, useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -30,23 +30,24 @@ export function LoginForm(): React.JSX.Element {
   const [state, formAction, isPending] = useActionState(loginAction, null)
 
   const handleSubmit = useCallback(async (formData: FormData) => {
-    const result = await formAction(formData)
-    const nextState = result as LoginFormState
-
-    const match = nextState?.error?.match(/(\d+)\s+seconds/)
-    if (match) {
-      const seconds = Number(match[1])
-      setRateLimitState({
-        remaining: seconds,
-        total: seconds,
-        startedAt: Date.now(),
-      })
-    } else {
-      setRateLimitState(null)
-    }
-
-    return result
+    await formAction(formData)
   }, [formAction])
+
+  useEffect(() => {
+    const match = state?.error?.match(/(\d+)\s+seconds/)
+    startTransition(() => {
+      if (match) {
+        const seconds = Number(match[1])
+        setRateLimitState({
+          remaining: seconds,
+          total: seconds,
+          startedAt: Date.now(),
+        })
+      } else if (state) {
+        setRateLimitState(null)
+      }
+    })
+  }, [state])
 
   useEffect(() => {
     if (!rateLimitState) {

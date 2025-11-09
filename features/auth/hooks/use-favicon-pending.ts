@@ -22,17 +22,17 @@ export function useFaviconPending(pending: boolean): void {
     }
 
     if (pending) {
-      link.dataset.authPending = 'true'
+      link.dataset['authPending'] = 'true'
       link.href = PENDING_FAVICON
-    } else if (link.dataset.authPending === 'true') {
+    } else if (link.dataset['authPending'] === 'true') {
       link.href = originalHrefRef.current ?? link.href
-      delete link.dataset.authPending
+      delete link.dataset['authPending']
     }
 
     return () => {
-      if (link.dataset.authPending === 'true') {
+      if (link.dataset['authPending'] === 'true') {
         link.href = originalHrefRef.current ?? link.href
-        delete link.dataset.authPending
+        delete link.dataset['authPending']
       }
     }
   }, [pending])

@@ -1,57 +1,57 @@
 import type { FeaturesData } from './features.types'
 
 export const featuresData: FeaturesData = {
-  heading: 'Everything You Need to Succeed Online',
+  heading: 'A full marketing web team in one subscription',
   subheading:
-    'Our subscription plans include professional design, development, hosting, and ongoing support.',
+    'Every plan includes strategy, UX, copy, development, hosting, and optimization—so nothing slows down your next launch.',
   features: [
     {
-      id: 'custom-design',
-      iconLabel: 'Custom design icon',
-      title: 'Custom Design',
+      id: 'strategy-first',
+      iconLabel: 'Strategy icon',
+      title: 'Strategy-first design',
       description:
-        'Unique, professional designs tailored to your brand and business goals.',
-      icon: '🎨',
+        'We audit your funnel, map user journeys, and design page systems that guide visitors to the next best action.',
+      icon: '🧠',
     },
     {
       id: 'responsive',
       iconLabel: 'Responsive icon',
-      title: 'Mobile-Responsive',
+      title: 'Mobile-perfect experiences',
       description:
-        'Beautiful, fast-loading websites that work perfectly on all devices.',
+        'Edge-cached, responsive layouts deliver instant load times and frictionless browsing on any device.',
       icon: '📱',
     },
     {
       id: 'seo',
       iconLabel: 'SEO icon',
-      title: 'SEO Optimized',
+      title: 'Built-in SEO authority',
       description:
-        'Built-in search engine optimization to help customers find you online.',
+        'Technical SEO, schema, and content briefs baked into every launch so you capture intent-ready traffic.',
       icon: '🔍',
     },
     {
       id: 'hosting',
       iconLabel: 'Hosting icon',
-      title: 'Hosting Included',
+      title: 'Proactive hosting & security',
       description:
-        'Fast, secure hosting with automatic backups and 99.9% uptime guarantee.',
-      icon: '🚀',
+        'Canadian data residency, daily backups, and active monitoring keep every launch compliant and resilient.',
+      icon: '🛡️',
     },
     {
       id: 'support',
       iconLabel: 'Support icon',
-      title: 'Dedicated Support',
+      title: 'Dedicated growth team',
       description:
-        'Direct access to our team for updates, changes, and technical assistance.',
-      icon: '💬',
+        'Message us for rollout plans, CRO ideas, or copy tweaks—your requests land directly with the builders.',
+      icon: '🤝',
     },
     {
       id: 'maintenance',
       iconLabel: 'Maintenance icon',
-      title: 'Ongoing Maintenance',
+      title: 'Continuous optimization',
       description:
-        'Regular updates, security patches, and performance optimization included.',
-      icon: '🔧',
+        'Heatmap reviews, A/B testing, and quarterly roadmap sessions keep conversion rates climbing month after month.',
+      icon: '📈',
     },
   ],
 }

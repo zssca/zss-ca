@@ -1,15 +1,28 @@
-import { BarChart3, TrendingUp, Users, Globe, TicketCheck } from 'lucide-react'
+import {
+  BarChart3,
+  TrendingUp,
+  Users,
+  Globe,
+  TicketCheck,
+  DollarSign,
+  UserMinus,
+} from 'lucide-react'
 import { getAnalyticsData } from '../api/queries'
 import { getAdminDashboardStats } from '@/features/admin/dashboard/api/queries'
-import { Item, ItemContent, ItemDescription, ItemHeader, ItemMedia, ItemTitle } from '@/components/ui/item'
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemHeader,
+  ItemMedia,
+  ItemTitle,
+} from '@/components/ui/item'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart'
-import { Bar, BarChart, XAxis, YAxis, CartesianGrid } from 'recharts'
+import { PlanDistributionChart } from './plan-distribution-chart'
+import { StatusDistributionChart } from './status-distribution-chart'
+import { RevenueDashboard } from './revenue-dashboard'
+import { ChurnDashboard } from './churn-dashboard'
 
 export async function AnalyticsPageFeature(): Promise<React.JSX.Element> {
   const _data = await getAnalyticsData()
@@ -95,8 +108,16 @@ export async function AnalyticsPageFeature(): Promise<React.JSX.Element> {
         </Item>
       </div>
 
-      <Tabs defaultValue="plans" className="space-y-4">
+      <Tabs defaultValue="revenue" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="revenue">
+            <DollarSign className="mr-2 size-4" aria-hidden="true" />
+            Revenue
+          </TabsTrigger>
+          <TabsTrigger value="retention">
+            <UserMinus className="mr-2 size-4" aria-hidden="true" />
+            Retention & Churn
+          </TabsTrigger>
           <TabsTrigger value="plans">
             <BarChart3 className="mr-2 size-4" aria-hidden="true" />
             Plan Distribution
@@ -111,6 +132,14 @@ export async function AnalyticsPageFeature(): Promise<React.JSX.Element> {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="revenue" className="space-y-4">
+          <RevenueDashboard />
+        </TabsContent>
+
+        <TabsContent value="retention" className="space-y-4">
+          <ChurnDashboard />
+        </TabsContent>
+
         <TabsContent value="plans" className="space-y-4">
           <Item variant="outline">
             <ItemHeader>
@@ -118,29 +147,7 @@ export async function AnalyticsPageFeature(): Promise<React.JSX.Element> {
               <ItemDescription>Active subscriptions by plan type</ItemDescription>
             </ItemHeader>
             <ItemContent>
-              {planDistributionData.length > 0 ? (
-                <ChartContainer
-                  config={{
-                    value: {
-                      label: 'Subscriptions',
-                      color: 'var(--chart-1)',
-                    },
-                  }}
-                  className="min-h-[300px]"
-                >
-                  <BarChart accessibilityLayer data={planDistributionData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="value" fill="var(--chart-1)" />
-                  </BarChart>
-                </ChartContainer>
-              ) : (
-                <div className="flex min-h-[300px] items-center justify-center text-muted-foreground">
-                  No subscription data available
-                </div>
-              )}
+              <PlanDistributionChart data={planDistributionData} />
             </ItemContent>
           </Item>
         </TabsContent>
@@ -152,29 +159,7 @@ export async function AnalyticsPageFeature(): Promise<React.JSX.Element> {
               <ItemDescription>Client sites by current status</ItemDescription>
             </ItemHeader>
             <ItemContent>
-              {statusDistributionData.length > 0 ? (
-                <ChartContainer
-                  config={{
-                    value: {
-                      label: 'Sites',
-                      color: 'var(--chart-2)',
-                    },
-                  }}
-                  className="min-h-[300px]"
-                >
-                  <BarChart accessibilityLayer data={statusDistributionData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="value" fill="var(--chart-2)" />
-                  </BarChart>
-                </ChartContainer>
-              ) : (
-                <div className="flex min-h-[300px] items-center justify-center text-muted-foreground">
-                  No site data available
-                </div>
-              )}
+              <StatusDistributionChart data={statusDistributionData} />
             </ItemContent>
           </Item>
         </TabsContent>

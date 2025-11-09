@@ -1,6 +1,7 @@
-import type { Database } from '@/lib/types/database.types'
+import type { Database as _Database } from '@/lib/types/database.types'
+import type { PlanWithPrices } from '../../api'
 
-export type PricingPlan = Database['public']['Tables']['plan']['Row']
+export type PricingPlan = PlanWithPrices
 
 export type BillingInterval = 'monthly' | 'yearly'
 

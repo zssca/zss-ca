@@ -1,9 +1,9 @@
 import type { TestimonialsData } from './testimonials.types'
 
 export const testimonialsData: TestimonialsData = {
-  heading: 'Trusted by Canadian Small Businesses',
+  heading: 'Canadian growth teams rely on us every month',
   subheading:
-    'See what our clients have to say about their experience with Zenith Strategic Solutions.',
+    'From retail franchises to national nonprofits, subscription clients choose us for measurable results and proactive support.',
   testimonials: [
     {
       id: 'testimonial-1',
@@ -11,7 +11,7 @@ export const testimonialsData: TestimonialsData = {
       role: 'Owner',
       company: 'Mountain Peak Café',
       content:
-        'The subscription model was perfect for our budget. We got a beautiful, professional website without the huge upfront cost. The support team is incredibly responsive and makes updates a breeze.',
+        'We ship seasonal menus in hours instead of weeks. The team drops updated creative, photos, and forms into the site, and reservations jumped 33% after the first refresh.',
       rating: 5,
     },
     {
@@ -20,7 +20,7 @@ export const testimonialsData: TestimonialsData = {
       role: 'Director',
       company: 'Calgary Dental Care',
       content:
-        'Moving to Zenith was the best decision for our practice. Our new site looks amazing on mobile devices, and we have seen a 40% increase in online appointment bookings. Worth every penny.',
+        'Online bookings grew 41% after launch. Their CRO specialists test new hero copy, chat widgets, and forms for us—we just approve changes and watch leads roll in.',
       rating: 5,
     },
     {
@@ -29,7 +29,7 @@ export const testimonialsData: TestimonialsData = {
       role: 'Founder',
       company: 'Verde Landscaping',
       content:
-        'I love that I do not have to worry about technical stuff. They handle everything—hosting, security, updates—so I can focus on growing my business. The peace of mind is invaluable.',
+        'I submit update requests from my phone and the team handles the rest. Photo galleries, testimonials, and quote forms stay current without pulling our crew off site.',
       rating: 5,
     },
     {
@@ -38,7 +38,7 @@ export const testimonialsData: TestimonialsData = {
       role: 'Managing Partner',
       company: 'Thompson & Associates Law',
       content:
-        'Professional, reliable, and excellent value. Our website showcases our expertise perfectly, and the ongoing support ensures we always look our best online. Highly recommend.',
+        'They interview our partners, ghostwrite practice pages, and publish thought-leadership pieces without adding to our workload. It feels like having an in-house digital team.',
       rating: 5,
     },
     {
@@ -47,7 +47,7 @@ export const testimonialsData: TestimonialsData = {
       role: 'CEO',
       company: 'Park Financial Services',
       content:
-        'The team took time to understand our brand and delivered a website that perfectly represents our firm. The monthly subscription makes budgeting simple, and updates are always done quickly.',
+        'Budgeting is simple—the subscription covers strategy, compliance reviews, and design refreshes. We finally have a site that evolves alongside our advisory practice.',
       rating: 5,
     },
     {
@@ -56,7 +56,7 @@ export const testimonialsData: TestimonialsData = {
       role: 'Owner',
       company: 'Kowalski Home Renovations',
       content:
-        'As a contractor, I needed a site that could showcase my portfolio beautifully. Zenith delivered exactly that. My leads have increased significantly since launching the new site.',
+        'Projects go live with before/after sliders, financing CTAs, and localized SEO copy. The site now drives more leads than paid ads—and maintenance is completely hands-off.',
       rating: 5,
     },
   ],

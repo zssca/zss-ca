@@ -1,6 +1,7 @@
 import 'server-only'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   navigationMenuTriggerStyle,
   NavigationMenu,
@@ -13,6 +14,7 @@ import { siteConfig, MARKETING_NAV_ITEMS } from '@/lib/config'
 import { getUserWithProfile } from '@/lib/auth/get-user-with-profile'
 import { HeaderMobileMenu } from './header-mobile-menu'
 import { HeaderAuthActions } from './header-auth-actions'
+import { AnimatedThemeToggler } from '@/components/ui/animated-theme-toggler'
 
 export default async function Header() {
   const userWithProfile = await getUserWithProfile()
@@ -34,9 +36,17 @@ export default async function Header() {
         <div className="flex items-center gap-6">
           <Link
             href={ROUTES.HOME}
-            className="flex items-center font-semibold tracking-tight transition-colors hover:text-foreground/80"
+            className="flex items-center gap-2 font-semibold tracking-tight transition-colors hover:text-foreground/80"
             aria-label="Go to homepage"
           >
+            <Image
+              src="/logo.svg"
+              alt={`${siteConfig.name} logo`}
+              width={32}
+              height={32}
+              className="size-8"
+              priority
+            />
             <span className="hidden text-base sm:inline-block">{siteConfig.name}</span>
             <span className="text-base sm:hidden">{siteConfig.shortName}</span>
           </Link>
@@ -60,6 +70,7 @@ export default async function Header() {
           </NavigationMenu>
         </div>
         <div className="flex items-center gap-2">
+          <AnimatedThemeToggler />
           <HeaderMobileMenu user={user} profile={profile} portalLink={portalLink} />
           <HeaderAuthActions user={user} profile={profile} />
         </div>

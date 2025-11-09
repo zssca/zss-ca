@@ -18,3 +18,9 @@ export * from './case-studies'
 
 // Resources
 export * from './resources'
+
+// Privacy
+export * from './privacy'
+
+// Terms
+export * from './terms'

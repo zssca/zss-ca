@@ -7,6 +7,8 @@ export interface ResourceCategory {
   description: string
   icon?: LucideIcon
   iconLabel?: string
+  href?: string
+  linkLabel?: string
 }
 
 export interface ResourcesCategoriesData {

@@ -1,39 +1,9 @@
 'use server'
 
-import { headers } from 'next/headers'
+import { headers, cookies } from 'next/headers'
 import { contactFormSchema } from '../schema'
-
-// Simple rate limiting for contact form
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
-
-async function rateLimit(identifier: string, maxRequests = 3, windowMs = 3600000) {
-  const now = Date.now()
-  const record = rateLimitMap.get(identifier)
-
-  if (record && now > record.resetAt) {
-    rateLimitMap.delete(identifier)
-  }
-
-  const current = rateLimitMap.get(identifier)
-
-  if (!current) {
-    rateLimitMap.set(identifier, { count: 1, resetAt: now + windowMs })
-    return { allowed: true }
-  }
-
-  if (current.count >= maxRequests) {
-    return { allowed: false, resetAt: current.resetAt }
-  }
-
-  current.count++
-  return { allowed: true }
-}
-
-async function getClientIdentifier() {
-  const headersList = await headers()
-  const ip = headersList.get('x-forwarded-for') ?? 'unknown'
-  return ip
-}
+import { createClient } from '@/lib/supabase/server'
+import { rateLimits, checkRateLimit, getClientIdentifier } from '@/lib/rate-limit'
 
 export async function submitContactForm(
   prevState: { message?: string; errors?: Record<string, string[]>; success?: boolean } | null,
@@ -43,14 +13,13 @@ export async function submitContactForm(
   errors?: Record<string, string[]>
   success?: boolean
 }> {
-  // Rate limit by IP address - 3 submissions per hour
-  const identifier = await getClientIdentifier()
-  const rateCheck = await rateLimit(identifier, 3, 3600000)
+  // Rate limit by IP address - 3 submissions per hour using Upstash Redis
+  const headersList = await headers()
+  const identifier = getClientIdentifier(headersList)
+  const rateCheck = await checkRateLimit(rateLimits.contactForm, identifier)
 
-  if (!rateCheck.allowed) {
-    const minutesUntilReset = Math.ceil(
-      ((rateCheck.resetAt ?? 0) - Date.now()) / 60000
-    )
+  if (!rateCheck.success) {
+    const minutesUntilReset = Math.ceil((rateCheck.reset - Date.now()) / 60000)
     return {
       message: `Too many submissions. Please try again in ${minutesUntilReset} minute(s).`,
     }
@@ -76,24 +45,72 @@ export async function submitContactForm(
   const { fullName, email, companyName, phone, serviceInterest, message } =
     validatedFields.data
 
-  // Log the contact form submission
-  // In production, this should send an email notification to the admin team
-  console.log('Contact Form Submission:', {
-    name: fullName,
-    email,
-    company: companyName,
-    phone,
-    service: serviceInterest,
-    message,
-    timestamp: new Date().toISOString(),
+  // Get attribution data from cookies (headers already fetched above)
+  const cookieStore = await cookies()
+  const supabase = await createClient()
+
+  // Save to database
+  const { data: submission, error } = await supabase
+    .from('contact_submission')
+    .insert({
+      full_name: fullName,
+      email,
+      company_name: companyName,
+      phone,
+      service_interest: serviceInterest,
+      message,
+
+      // Attribution tracking from cookies
+      utm_source: cookieStore.get('utm_source')?.value,
+      utm_medium: cookieStore.get('utm_medium')?.value,
+      utm_campaign: cookieStore.get('utm_campaign')?.value,
+      utm_content: cookieStore.get('utm_content')?.value,
+      utm_term: cookieStore.get('utm_term')?.value,
+      referrer_url: headersList.get('referer'),
+      landing_page: cookieStore.get('landing_page')?.value,
+
+      // Consent and IP tracking
+      consent_ip_address: headersList.get('x-forwarded-for') || headersList.get('x-real-ip'),
+      marketing_opt_in: formData.get('marketingOptIn') === 'true',
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Failed to save contact submission:', error)
+    return {
+      message: 'Failed to submit form. Please try again or email us directly.',
+    }
+  }
+
+  console.log('Contact submission saved:', submission.id)
+
+  // Send email notifications asynchronously (don't block response)
+  Promise.all([
+    // Send admin notification
+    import('@/lib/email/send').then((emailLib) =>
+      emailLib.sendNewLeadNotification({
+        fullName,
+        email,
+        companyName,
+        phone,
+        serviceInterest,
+        message,
+        utmSource: cookieStore.get('utm_source')?.value,
+        utmMedium: cookieStore.get('utm_medium')?.value,
+        utmCampaign: cookieStore.get('utm_campaign')?.value,
+      })
+    ),
+    // Send confirmation email to lead
+    import('@/lib/email/send').then((emailLib) =>
+      emailLib.sendLeadConfirmation(email, fullName)
+    ),
+  ]).catch((error) => {
+    console.error('Failed to send email notifications:', error)
+    // Don't fail the submission if emails fail
   })
 
-  // TODO: Implement email notification to admin team
-  // Example: await sendEmail({
-  //   to: process.env.ADMIN_EMAIL,
-  //   subject: `New Contact Form: ${serviceInterest}`,
-  //   body: message
-  // })
+  // TODO: Add to newsletter if opted in
 
   return {
     message: 'Thank you! We will be in touch soon.',

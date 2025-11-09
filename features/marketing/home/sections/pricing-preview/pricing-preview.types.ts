@@ -1,19 +1,19 @@
-export interface PricingTier {
+export interface PricingPreviewGuarantee {
   id: string
-  name: string
+  title: string
   description: string
-  priceMonthly: number
-  priceYearly: number
-  popular?: boolean
-  features: string[]
+  helper: string
 }
 
 export interface PricingPreviewData {
   heading: string
   subheading: string
-  tiers: PricingTier[]
+  pill: string
+  guarantees: PricingPreviewGuarantee[]
   cta: {
     label: string
     href: string
+    secondaryLabel: string
+    secondaryHref: string
   }
 }

@@ -31,7 +31,7 @@ export function SignupConfirmPasswordField({
   onToggleConfirmPassword,
 }: SignupConfirmPasswordFieldProps): React.JSX.Element {
   return (
-    <Field data-invalid={!!fieldErrors?.confirmPassword}>
+    <Field data-invalid={!!fieldErrors?.['confirmPassword']}>
       <FieldLabel htmlFor="confirmPassword">
         Confirm Password
         <span className="ml-1 text-destructive" aria-hidden="true">*</span>
@@ -49,8 +49,8 @@ export function SignupConfirmPasswordField({
           data-webauthn="true"
           required
           aria-required="true"
-          aria-invalid={!!fieldErrors?.confirmPassword}
-          aria-describedby={fieldErrors?.confirmPassword ? 'signup-confirm-password-error' : undefined}
+          aria-invalid={!!fieldErrors?.['confirmPassword']}
+          aria-describedby={fieldErrors?.['confirmPassword'] ? 'signup-confirm-password-error' : undefined}
           disabled={isPending}
         />
         <InputGroupAddon align="inline-end">
@@ -63,10 +63,10 @@ export function SignupConfirmPasswordField({
           />
         </InputGroupAddon>
       </InputGroup>
-      {fieldErrors?.confirmPassword ? (
+      {fieldErrors?.['confirmPassword'] ? (
         <FieldError
           id="signup-confirm-password-error"
-          errors={fieldErrors.confirmPassword.map((message) => ({ message }))}
+          errors={fieldErrors['confirmPassword'].map((message) => ({ message }))}
         />
       ) : null}
       <FieldDescription className="text-xs text-muted-foreground">

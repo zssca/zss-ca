@@ -1,7 +1,24 @@
 import type { CaseHeroData } from './case-hero.types'
 
 export const caseHeroData: CaseHeroData = {
-  heading: 'Case studies & launch highlights',
+  heading: 'Proof that the subscription model compounding results',
   description:
-    'Explore how Zenith Strategic Solutions helps Canadian organizations launch, scale, and optimize their marketing sites with subscription-based delivery.',
+    'These stories span healthcare, SaaS, non-profit, and financial services teams who needed a dedicated marketing web partner.',
+  highlights: [
+    {
+      value: '+38%',
+      label: 'median conversion lift',
+      helper: 'Measured 90 days post-launch',
+    },
+    {
+      value: '60+',
+      label: 'chapters supported',
+      helper: 'Across national non-profit rollouts',
+    },
+    {
+      value: '11 days',
+      label: 'idea to production',
+      helper: 'For SaaS product marketing teams',
+    },
+  ],
 }

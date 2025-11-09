@@ -22,7 +22,6 @@ export async function updateProfileAction(prevState: ActionResult, formData: For
     region: formData.get('region'),
     postal_code: formData.get('postal_code'),
     country: formData.get('country'),
-    marketing_opt_in: formData.get('marketing_opt_in') === 'on',
   })
 
   if (!result.success) {

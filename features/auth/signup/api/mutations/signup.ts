@@ -2,10 +2,12 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { signupSchema } from '../schema'
 import { sendOTPForEmailConfirmation } from '@/lib/auth/otp-helpers'
 import { ROUTES } from '@/lib/constants/routes'
+import { rateLimits, checkRateLimit, getClientIdentifier } from '@/lib/rate-limit'
 
 type SignupState = {
   error?: string | null
@@ -15,6 +17,18 @@ type SignupState = {
 }
 
 export async function signupAction(prevState: SignupState | null, formData: FormData): Promise<SignupState | never> {
+  // Rate limit by IP address - 3 signups per hour
+  const headersList = await headers()
+  const identifier = getClientIdentifier(headersList)
+  const rateCheck = await checkRateLimit(rateLimits.signup, identifier)
+
+  if (!rateCheck.success) {
+    const minutesUntilReset = Math.ceil((rateCheck.reset - Date.now()) / 60000)
+    return {
+      error: `Too many signup attempts. Please try again in ${minutesUntilReset} minute(s).`,
+    }
+  }
+
   // Validate input with Zod
   const result = signupSchema.safeParse({
     email: formData.get('email'),

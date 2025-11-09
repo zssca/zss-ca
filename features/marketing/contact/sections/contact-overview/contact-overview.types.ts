@@ -10,6 +10,7 @@ export interface ContactChannel {
 export interface ContactOfficeDetails {
   addressLines: string[]
   hours: string
+  note?: string
 }
 
 export interface ContactOverviewData {

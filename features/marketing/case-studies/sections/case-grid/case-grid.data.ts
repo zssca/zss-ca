@@ -2,13 +2,13 @@ import { Gavel, HeartPulse, Home, Laptop } from 'lucide-react'
 import type { CaseGridData } from './case-grid.types'
 
 export const caseGridData: CaseGridData = {
-  heading: 'Recent launches',
+  heading: 'Recent subscription wins',
   cases: [
     {
       id: 'prairie-clinic',
       name: 'Prairie Wellness Clinic',
       industry: 'Health & wellness',
-      summary: 'Rebuilt their patient acquisition funnel with appointment integrations and accessibility-first design.',
+      summary: 'Rebuilt the patient acquisition funnel with bilingual appointment flows, referral tracking, and WCAG 2.1 AA compliance.',
       services: ['UX Strategy', 'Web Development', 'Analytics'],
       icon: HeartPulse,
       iconLabel: 'Healthcare icon',
@@ -17,7 +17,7 @@ export const caseGridData: CaseGridData = {
       id: 'north-peak',
       name: 'North Peak Roofing',
       industry: 'Home services',
-      summary: 'Localized SEO pages and seasonal landing campaigns that doubled quote requests in 60 days.',
+      summary: 'Localized SEO hubs and seasonal landing campaigns doubled quote requests in 60 days.',
       services: ['Marketing Site', 'SEO Foundations', 'Ongoing Support'],
       icon: Home,
       iconLabel: 'Home services icon',
@@ -26,7 +26,7 @@ export const caseGridData: CaseGridData = {
       id: 'lumen-software',
       name: 'Lumen Software',
       industry: 'Tech / SaaS',
-      summary: 'Launched a docs hub, marketing site, and changelog that ship in sync with their product team.',
+      summary: 'Launched coordinated marketing site, docs hub, and changelog that ship in sync with weekly releases.',
       services: ['Design System', 'CMS Integration', 'Product Marketing'],
       icon: Laptop,
       iconLabel: 'Technology icon',
@@ -35,7 +35,7 @@ export const caseGridData: CaseGridData = {
       id: 'harbour-legal',
       name: 'Harbour Legal',
       industry: 'Professional services',
-      summary: 'Positioned a boutique legal firm with thought-leadership resources and lead routing automations.',
+      summary: 'Positioned a boutique legal firm with thought-leadership hubs and automated lead routing.',
       services: ['Brand Refresh', 'Web Development', 'Content Enablement'],
       icon: Gavel,
       iconLabel: 'Legal icon',

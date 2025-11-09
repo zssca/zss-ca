@@ -25,7 +25,7 @@ export function SignupCompanyField({
   isPending,
 }: SignupCompanyFieldProps): React.JSX.Element {
   return (
-    <Field data-invalid={!!fieldErrors?.companyName}>
+    <Field data-invalid={!!fieldErrors?.['companyName']}>
       <FieldLabel htmlFor="companyName">
         Company Name
         <Badge variant="outline" className="ml-2 text-xs uppercase">
@@ -45,10 +45,10 @@ export function SignupCompanyField({
           disabled={isPending}
         />
       </InputGroup>
-      {fieldErrors?.companyName ? (
+      {fieldErrors?.['companyName'] ? (
         <FieldError
           id="signup-company-error"
-          errors={fieldErrors.companyName.map((message) => ({ message }))}
+          errors={fieldErrors['companyName'].map((message) => ({ message }))}
         />
       ) : null}
     </Field>

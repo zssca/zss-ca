@@ -1,10 +1,16 @@
 'use client'
 
-import { Item, ItemContent, ItemDescription, ItemSeparator, ItemTitle } from '@/components/ui/item'
 import { Kbd, KbdGroup } from '@/components/ui/kbd'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AdminQuickActionsGrid } from './admin-quick-actions-grid'
-import { AdminCommandSearch } from './admin-command-search'
+import { cn } from '@/lib/utils/index'
+import {
+  Item,
+  ItemActions,
+  ItemDescription,
+  ItemHeader,
+  ItemTitle,
+} from '@/components/ui/item'
 
 interface AdminOverviewActionsProps {
   stats: {
@@ -13,36 +19,29 @@ interface AdminOverviewActionsProps {
     liveSites: number
     openTickets: number
   }
+  className?: string
 }
 
-export function AdminOverviewActions({ stats }: AdminOverviewActionsProps): React.JSX.Element {
+export function AdminOverviewActions({ stats, className }: AdminOverviewActionsProps): React.JSX.Element {
   return (
     <TooltipProvider>
-      <div className="space-y-6">
-        <Item variant="outline">
-          <ItemContent>
-            <ItemTitle>Quick Actions</ItemTitle>
-            <ItemDescription>
-              Common administrative tasks. Press{' '}
+      <div className={cn('space-y-4', className)}>
+        <Item variant="muted" aria-label="Global search helper">
+          <ItemHeader className="flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <ItemTitle>Global quick search</ItemTitle>
+              <ItemDescription>Use the universal command palette to jump anywhere in the admin portal.</ItemDescription>
+            </div>
+            <ItemActions className="w-full justify-start sm:w-auto">
               <KbdGroup>
                 <Kbd>⌘</Kbd>
-                <span>+</span>
+                <span aria-hidden="true">+</span>
                 <Kbd>K</Kbd>
-              </KbdGroup>{' '}
-              to open global search.
-            </ItemDescription>
-          </ItemContent>
-          <ItemSeparator />
-          <ItemContent>
-            <AdminQuickActionsGrid stats={stats} />
-          </ItemContent>
+              </KbdGroup>
+            </ItemActions>
+          </ItemHeader>
         </Item>
-
-        <Item variant="outline">
-          <ItemContent>
-            <AdminCommandSearch />
-          </ItemContent>
-        </Item>
+        <AdminQuickActionsGrid stats={stats} />
       </div>
     </TooltipProvider>
   )

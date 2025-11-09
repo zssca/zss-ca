@@ -4,7 +4,11 @@ import { useFormStatus } from 'react-dom'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 
-export function ContactFormSubmitButton() {
+type ContactFormSubmitButtonProps = {
+  label: string
+}
+
+export function ContactFormSubmitButton({ label }: ContactFormSubmitButtonProps) {
   const { pending } = useFormStatus()
 
   return (
@@ -18,7 +22,7 @@ export function ContactFormSubmitButton() {
           </span>
         </>
       ) : (
-        'Send message'
+        label
       )}
     </Button>
   )

@@ -2,56 +2,34 @@ import { ROUTES } from '@/lib/constants/routes'
 import type { PricingPreviewData } from './pricing-preview.types'
 
 export const pricingPreviewData: PricingPreviewData = {
-  heading: 'Simple, Transparent Pricing',
+  heading: 'Predictable subscriptions for every roadmap',
   subheading:
-    'Choose the plan that fits your business. All plans include hosting, support, and maintenance.',
-  tiers: [
+    'Transparent pricing, no surprise invoices, and SLAs that scale from solo founders to national teams.',
+  pill: 'All plans include hosting, analytics, and unlimited requests',
+  guarantees: [
     {
-      id: 'starter',
-      name: 'Starter',
-      description: 'Perfect for new businesses getting online',
-      priceMonthly: 199,
-      priceYearly: 1990,
-      features: [
-        'Up to 5 pages',
-        'Mobile responsive design',
-        'Basic SEO setup',
-        'Email support',
-      ],
+      id: 'launch',
+      title: 'Launch sprint included',
+      description: 'Kickoff, design, build, QA, and deployment are covered in your first month—no setup fees.',
+      helper: 'Average time to launch: 14 days',
     },
     {
-      id: 'business',
-      name: 'Business',
-      description: 'Ideal for growing businesses',
-      priceMonthly: 349,
-      priceYearly: 3490,
-      popular: true,
-      features: [
-        'Up to 15 pages',
-        'Custom design',
-        'Advanced SEO',
-        'Priority support',
-        'Monthly analytics reports',
-      ],
+      id: 'support',
+      title: 'Dedicated Slack pod',
+      description: 'Direct access to designers, engineers, and strategists with sub-two-hour response times.',
+      helper: 'Response SLA: 2h business / 6h off-hours',
     },
     {
-      id: 'professional',
-      name: 'Professional',
-      description: 'For established businesses',
-      priceMonthly: 599,
-      priceYearly: 5990,
-      features: [
-        'Up to 30 pages',
-        'Premium custom design',
-        'E-commerce integration',
-        'Dedicated support',
-        'Weekly analytics reports',
-        'A/B testing',
-      ],
+      id: 'security',
+      title: 'Security-first hosting',
+      description: 'Canadian data residency, daily backups, and automated rollbacks keep launches resilient.',
+      helper: 'Uptime last 12 months: 99.98%',
     },
   ],
   cta: {
-    label: 'View All Plans',
+    label: 'Compare full pricing',
     href: ROUTES.PRICING,
+    secondaryLabel: 'Download SLA overview',
+    secondaryHref: ROUTES.CONTACT,
   },
 }

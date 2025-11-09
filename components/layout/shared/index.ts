@@ -6,14 +6,5 @@
 
 export { UserMenu } from './user-menu'
 export { getDisplayName, getDisplayEmail, getInitials } from './user-menu-helpers'
-export {
-  PageHeaderSkeleton,
-  StatCardsSkeleton,
-  CardGridSkeleton,
-  TableSkeleton,
-  ChartLayoutSkeleton,
-  FormSkeleton,
-  AuthPageSkeleton,
-  DashboardOverviewSkeleton,
-  ListPageSkeleton,
-} from './loading-skeletons'
+export { SectionContainer } from './section-container'
+export * from './loading-skeletons'

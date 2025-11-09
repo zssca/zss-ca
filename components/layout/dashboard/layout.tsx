@@ -16,6 +16,7 @@ import { NavUser } from './nav-user'
 import { Search } from './search'
 import { SidebarNav } from './sidebar-nav'
 import { PageHeader } from './page-header'
+import { AnimatedThemeToggler } from '@/components/ui/animated-theme-toggler'
 import type { SidebarSection } from './sidebar-nav'
 
 export interface DashboardLayoutProps {
@@ -76,7 +77,8 @@ export async function DashboardLayout({
                 className="mr-2 data-[orientation=vertical]:h-full"
               />
               <Breadcrumbs homeHref={breadcrumbHomeHref} homeLabel={breadcrumbHomeLabel} />
-              <div className="ml-auto">
+              <div className="ml-auto flex items-center gap-2">
+                <AnimatedThemeToggler />
                 <Search role={role} user={user} />
               </div>
             </div>

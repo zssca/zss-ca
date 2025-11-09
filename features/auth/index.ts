@@ -12,3 +12,6 @@ export * from './update-password'
 
 // OTP
 export * from './otp'
+
+// Resend Verification
+export * from './resend-verification'

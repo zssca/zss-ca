@@ -17,6 +17,7 @@ import { ChevronDown, MessageSquare } from 'lucide-react'
 import { ReplyForm } from './reply-form'
 import { UpdateStatusButton } from './update-status-button'
 import type { TicketWithReplies } from '../api/queries'
+import type { TicketPriority, TicketStatus } from '@/lib/types/database-aliases'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
   Item,
@@ -57,16 +58,16 @@ export function TicketDetail({ ticket, currentUserId: _currentUserId, isAdmin }:
             <div className="space-y-1">
               <ItemTitle>{ticket.subject}</ItemTitle>
               <ItemDescription>
-                Created by {ticket.profile.contact_name || ticket.profile.contact_email} on{' '}
+                Created by {ticket.profile?.contact_name || ticket.profile?.contact_email || 'Unknown'} on{' '}
                 {createdAt.toLocaleDateString()} at {createdAt.toLocaleTimeString()}
               </ItemDescription>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Badge variant={getTicketPriorityVariant(ticket.priority)}>
-                {getTicketPriorityLabel(ticket.priority)}
+              <Badge variant={getTicketPriorityVariant(ticket.priority as TicketPriority)}>
+                {getTicketPriorityLabel(ticket.priority as TicketPriority)}
               </Badge>
-              <Badge variant={getTicketStatusVariant(ticket.status)}>
-                {getTicketStatusLabel(ticket.status)}
+              <Badge variant={getTicketStatusVariant(ticket.status as TicketStatus)}>
+                {getTicketStatusLabel(ticket.status as TicketStatus)}
               </Badge>
             </div>
           </div>
@@ -80,12 +81,12 @@ export function TicketDetail({ ticket, currentUserId: _currentUserId, isAdmin }:
             <FieldGroup className="space-y-4">
               <Field>
                 <FieldLabel>Category</FieldLabel>
-                <FieldDescription>{formatCategoryLabel(ticket.category)}</FieldDescription>
+                <FieldDescription>{formatCategoryLabel(ticket.category || '')}</FieldDescription>
               </Field>
               <Field>
                 <FieldLabel>Message</FieldLabel>
                 <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                  {ticket.message}
+                  {String(ticket['message'])}
                 </p>
               </Field>
               {isAdmin && (

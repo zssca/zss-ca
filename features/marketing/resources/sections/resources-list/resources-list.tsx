@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { SectionContainer } from '@/components/layout/shared'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -6,6 +7,7 @@ import {
   ItemActions,
   ItemContent,
   ItemDescription,
+  ItemGroup,
   ItemMedia,
   ItemTitle,
 } from '@/components/ui/item'
@@ -13,24 +15,27 @@ import { resourcesListData } from './resources-list.data'
 
 export function ResourcesList() {
   return (
-    <Item asChild className="block border-none rounded-none p-0 gap-0 text-base">
-      <section className="space-y-8">
-        <div className="flex flex-col items-center text-center gap-4">
-          <div className="flex flex-col items-center gap-3">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              {resourcesListData.heading}
-            </h2>
-          </div>
-        </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          {resourcesListData.resources.map((resource) => (
-            <Item
-              key={resource.id}
-              variant="outline"
-              asChild
-              className="h-full flex-col items-start gap-4 rounded-xl bg-background/60 p-6 text-left"
-            >
-              <article aria-labelledby={`resource-${resource.id}-title`}>
+    <SectionContainer aria-labelledby="resource-list-heading">
+      <ItemGroup className="gap-8">
+        <Item className="flex w-full flex-col items-center border-0 p-0 text-center">
+          <ItemContent className="max-w-3xl items-center gap-3 text-center">
+            <ItemTitle id="resource-list-heading" className="justify-center">
+              <span className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+                {resourcesListData.heading}
+              </span>
+            </ItemTitle>
+          </ItemContent>
+        </Item>
+
+        <Item className="w-full flex-col">
+          <ItemGroup className="grid gap-4 md:grid-cols-3" aria-label="Featured resources">
+            {resourcesListData.resources.map((resource) => (
+              <Item
+                key={resource.id}
+                variant="outline"
+                className="flex h-full flex-col items-start gap-4 rounded-xl bg-background/60 p-6 text-left"
+                aria-labelledby={`resource-${resource.id}-title`}
+              >
                 <div className="flex items-start gap-3">
                   {resource.icon ? (
                     <>
@@ -60,11 +65,11 @@ export function ResourcesList() {
                     </Link>
                   </Button>
                 </ItemActions>
-              </article>
-            </Item>
-          ))}
-        </div>
-      </section>
-    </Item>
+              </Item>
+            ))}
+          </ItemGroup>
+        </Item>
+      </ItemGroup>
+    </SectionContainer>
   )
 }

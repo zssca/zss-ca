@@ -5,6 +5,7 @@ export interface AboutValueItem {
   description: string
   icon?: LucideIcon
   iconLabel?: string
+  helper?: string
 }
 
 export interface AboutValuesData {

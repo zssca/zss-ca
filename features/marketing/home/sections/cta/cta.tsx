@@ -1,45 +1,45 @@
 import Link from 'next/link'
+import { Check } from 'lucide-react'
+import { SectionContainer } from '@/components/layout/shared'
 import { Button } from '@/components/ui/button'
 import {
   Item,
-  ItemContent,
   ItemDescription,
   ItemGroup,
-  ItemTitle,
+  ItemMedia,
 } from '@/components/ui/item'
 import { ctaData } from './cta.data'
 
 export function Cta() {
   return (
-    <ItemGroup className="mx-auto w-full max-w-7xl gap-16">
-      <Item className="flex w-full flex-col items-center border-0 p-0 text-center">
-        <ItemContent className="max-w-3xl items-center gap-3 text-center">
-          <ItemTitle className="justify-center">
-            <span className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-              {ctaData.heading}
-            </span>
-          </ItemTitle>
-          <ItemDescription className="text-base text-muted-foreground sm:text-lg">
-            {ctaData.description}
-          </ItemDescription>
-        </ItemContent>
-      </Item>
-      <Item className="w-full flex-col items-center gap-4">
-        <div className="w-full rounded-xl bg-primary px-8 py-10 text-center text-primary-foreground">
-          <div
-            className="flex flex-wrap justify-center gap-3"
-            role="group"
-            aria-label={ctaData.ariaLabel}
-          >
-            <Button asChild variant="secondary">
-              <Link href={ctaData.cta.primary.href}>{ctaData.cta.primary.label}</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href={ctaData.cta.secondary.href}>{ctaData.cta.secondary.label}</Link>
-            </Button>
-          </div>
-        </div>
-      </Item>
-    </ItemGroup>
+    <SectionContainer
+      heading={ctaData.heading}
+      description={ctaData.description}
+      background="primary"
+      rounded
+      padding="lg"
+    >
+      <ItemGroup className="gap-3" aria-label="Reasons to schedule a call">
+        {ctaData.bullets.map((bullet) => (
+          <Item key={bullet} className="items-start gap-3 border-0 p-0">
+            <ItemMedia variant="icon" aria-hidden="true">
+              <Check className="size-4" aria-hidden="true" />
+            </ItemMedia>
+            <ItemDescription className="text-primary-foreground/90 text-base">
+              {bullet}
+            </ItemDescription>
+          </Item>
+        ))}
+      </ItemGroup>
+
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <Button asChild size="lg" variant="secondary">
+          <Link href={ctaData.cta.primary.href}>{ctaData.cta.primary.label}</Link>
+        </Button>
+        <Button asChild size="lg" variant="outline" className="bg-white/10 text-primary-foreground hover:bg-white/20">
+          <Link href={ctaData.cta.secondary.href}>{ctaData.cta.secondary.label}</Link>
+        </Button>
+      </div>
+    </SectionContainer>
   )
 }

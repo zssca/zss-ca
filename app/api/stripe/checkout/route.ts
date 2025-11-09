@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createCheckoutSession } from '@/lib/stripe'
 import { z } from 'zod'
+import { rateLimits, withRateLimit } from '@/lib/rate-limit'
 
 // ✅ Next.js 15+: Route handlers are not cached by default
 // Explicitly set dynamic for clarity on POST endpoints
@@ -16,6 +17,13 @@ const checkoutRequestSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    // Apply rate limiting (10 checkout attempts per hour per IP)
+    const rateLimit = await withRateLimit(req, rateLimits.api)
+
+    if (!rateLimit.allowed && rateLimit.response) {
+      return rateLimit.response
+    }
+
     const body = await req.json()
 
     // Validate request body with Zod
@@ -27,7 +35,10 @@ export async function POST(req: NextRequest) {
           error: 'Validation failed',
           fieldErrors: result.error.flatten().fieldErrors
         },
-        { status: 400 }
+        {
+          status: 400,
+          headers: rateLimit.headers,
+        }
       )
     }
 
@@ -39,7 +50,9 @@ export async function POST(req: NextRequest) {
       origin,
     })
 
-    return NextResponse.json(sessionResult)
+    return NextResponse.json(sessionResult, {
+      headers: rateLimit.headers,
+    })
   } catch (error: unknown) {
     // Type guard for Error instances
     const errorMessage = error instanceof Error ? error.message : String(error)

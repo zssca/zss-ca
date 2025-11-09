@@ -10,13 +10,15 @@ import {
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import {
-  Card,
-  CardAction,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemHeader,
+  ItemMedia,
+  ItemTitle,
+} from '@/components/ui/item'
 import type { TicketWithProfile } from '@/features/admin/support/api/queries'
 
 interface SupportStatsProps {
@@ -87,34 +89,43 @@ export function SupportStats({ tickets }: SupportStatsProps): React.JSX.Element 
   ]
 
   return (
-    <div className="grid grid-cols-1 gap-4 px-0 *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs dark:*:data-[slot=card]:bg-card sm:grid-cols-2 lg:grid-cols-4">
+    <ItemGroup className="grid grid-cols-1 gap-4 px-0 sm:grid-cols-2 lg:grid-cols-4" aria-label="Support ticket stats">
       {stats.map((stat) => {
         const TrendIcon = stat.badgeIcon
         return (
-          <Card key={stat.key} className="@container/card">
-            <CardHeader>
-              <CardDescription>{stat.label}</CardDescription>
-              <CardTitle>
-                {stat.value}
-              </CardTitle>
-              <CardAction>
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <TrendIcon className="size-3" aria-hidden="true" />
-                  {stat.badge}
-                </Badge>
-              </CardAction>
-            </CardHeader>
-            <CardFooter className="flex-col items-start gap-1.5 text-sm">
-              <div className="flex items-center gap-2 font-medium">
-                <stat.icon className="size-4" aria-hidden="true" />
+          <Item
+            key={stat.key}
+            variant="outline"
+            role="listitem"
+            className="@container/support-card from-primary/5 to-card bg-gradient-to-t shadow-xs"
+          >
+            <ItemHeader className="flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <ItemDescription>{stat.label}</ItemDescription>
+                  <ItemTitle className="text-3xl font-semibold">{stat.value}</ItemTitle>
+                </div>
+                <ItemActions>
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <TrendIcon className="size-3" aria-hidden="true" />
+                    {stat.badge}
+                  </Badge>
+                </ItemActions>
+              </div>
+            </ItemHeader>
+            <ItemContent className="space-y-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 font-medium text-foreground">
+                <ItemMedia variant="icon" className="text-muted-foreground">
+                  <stat.icon className="size-4" aria-hidden="true" />
+                </ItemMedia>
                 {stat.footerHeadline}
               </div>
-              <div className="text-muted-foreground">{stat.footerHelper}</div>
-              <div className="text-muted-foreground">{stat.description}</div>
-            </CardFooter>
-          </Card>
+              <p>{stat.footerHelper}</p>
+              <p>{stat.description}</p>
+            </ItemContent>
+          </Item>
         )
       })}
-    </div>
+    </ItemGroup>
   )
 }

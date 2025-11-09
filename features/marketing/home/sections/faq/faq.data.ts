@@ -1,56 +1,53 @@
+import { ROUTES } from '@/lib/constants/routes'
 import type { FaqData } from './faq.types'
 
 export const faqData: FaqData = {
-  heading: 'Frequently Asked Questions',
-  subheading: 'Everything you need to know about our website subscription plans.',
+  heading: 'FAQs about our managed website subscription',
+  subheading: 'Transparent answers so you can confidently choose the right plan.',
   items: [
     {
+      id: 'launch-timeline',
+      question: 'How fast can we launch?',
+      answer:
+        'Your first conversion-ready pages go live in 10–14 days. We run a kickoff, content audit, and design sprint in week one, then publish, QA, and iterate during week two.',
+    },
+    {
       id: 'what-is-included',
-      question: 'What is included in my subscription?',
+      question: 'What exactly is included each month?',
       answer:
-        'All plans include professional design, mobile-responsive development, hosting, SSL certificate, ongoing maintenance, security updates, and dedicated support. Higher-tier plans include additional features like e-commerce, advanced analytics, and priority support.',
+        'Every subscription covers strategy, UX design, copywriting, development, hosting, security, analytics, and unlimited update requests routed through your dedicated producer.',
     },
     {
-      id: 'how-long-to-build',
-      question: 'How long does it take to build my website?',
+      id: 'request-process',
+      question: 'How do I request updates or new pages?',
       answer:
-        'Most websites are completed within 2-4 weeks from the initial kickoff call. The timeline depends on your plan tier, content readiness, and revision requests. We will provide a detailed timeline during onboarding.',
+        'Submit ideas via Slack or the client portal. We triage within one business day, confirm the brief, and schedule the work into your active sprint so you always know what ships next.',
     },
     {
-      id: 'can-i-cancel',
-      question: 'Can I cancel my subscription anytime?',
+      id: 'ownership',
+      question: 'Who owns the site and content?',
       answer:
-        'Yes, you can cancel your subscription at any time. If you cancel, you will retain access until the end of your current billing period. Please note that your website will be taken offline once the subscription ends unless you choose to migrate it.',
+        'You own every piece of content, asset, and analytics data. We manage the infrastructure and tooling. Need to migrate later? We provide a full export with no penalties.',
     },
     {
-      id: 'own-domain',
-      question: 'Can I use my own domain name?',
+      id: 'cancellation',
+      question: 'Can I pause or cancel?',
       answer:
-        'Absolutely! All plans support custom domain names. We will guide you through the process of connecting your existing domain or help you register a new one. Domain registration fees are separate from your subscription.',
+        'Yes. Pause or cancel anytime after the 3-month commitment. Your site stays live until the end of the billing period and we help transition hosting if needed.',
     },
     {
-      id: 'content-updates',
-      question: 'How do content updates and revisions work?',
+      id: 'compliance',
+      question: 'Do you handle accessibility and compliance?',
       answer:
-        'Simply submit update requests through your client portal. Each plan includes a monthly revision allowance. Most updates are completed within 2-3 business days. Complex changes may take longer and count as multiple revisions.',
-    },
-    {
-      id: 'hosting-included',
-      question: 'Is hosting and maintenance included?',
-      answer:
-        'Yes! All plans include fast, secure hosting with automatic backups, 99.9% uptime guarantee, SSL certificate, and regular software updates. You never have to worry about technical maintenance—we handle everything.',
-    },
-    {
-      id: 'upgrade-downgrade',
-      question: 'Can I upgrade or downgrade my plan?',
-      answer:
-        'Yes, you can change your plan at any time. Upgrades take effect immediately, and you will be charged a prorated amount. Downgrades take effect at the start of your next billing cycle.',
-    },
-    {
-      id: 'who-owns-site',
-      question: 'Who owns the website?',
-      answer:
-        'You retain ownership of your content and brand assets. The website code and design created under your subscription remain our intellectual property during the subscription. Upon cancellation, you can arrange a migration or export for an additional fee.',
+        'We design to WCAG 2.1 AA, run scheduled accessibility scans, and keep data residency within Canada to simplify compliance for regulated industries.',
     },
   ],
+  cta: {
+    title: 'Still have a question?',
+    description: 'Tell us about your current site and we will send a personalized video walkthrough with recommendations in under 48 hours.',
+    primary: {
+      label: 'Ask the team',
+      href: ROUTES.CONTACT,
+    },
+  },
 }

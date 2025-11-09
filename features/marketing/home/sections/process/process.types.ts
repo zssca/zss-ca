@@ -1,12 +1,14 @@
-export interface HomeProcessStep {
+export interface ProcessStep {
   id: number
   label: string
   title: string
   description: string
+  duration: string
+  outcome: string
 }
 
-export interface HomeProcessData {
+export interface ProcessData {
   heading: string
   subheading: string
-  steps: HomeProcessStep[]
+  steps: ProcessStep[]
 }

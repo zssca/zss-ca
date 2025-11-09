@@ -18,6 +18,8 @@ import {
   List,
   BarChart3,
   Wallet,
+  Database,
+  Mail,
 } from 'lucide-react'
 import { ROUTES } from '@/lib/constants'
 import type { SidebarSection } from '@/components/layout'
@@ -93,6 +95,11 @@ export const ADMIN_SIDEBAR_SECTIONS: SidebarSection[] = [
           },
         ],
       },
+      {
+        title: 'Leads',
+        url: ROUTES.ADMIN_LEADS,
+        icon: <Mail className="h-4 w-4" />,
+      },
     ],
   },
   {
@@ -102,6 +109,11 @@ export const ADMIN_SIDEBAR_SECTIONS: SidebarSection[] = [
         title: 'Analytics',
         url: ROUTES.ADMIN_ANALYTICS,
         icon: <BarChart3 className="h-4 w-4" />,
+      },
+      {
+        title: 'Database',
+        url: ROUTES.ADMIN_DATABASE,
+        icon: <Database className="h-4 w-4" />,
       },
       {
         title: 'Billing',

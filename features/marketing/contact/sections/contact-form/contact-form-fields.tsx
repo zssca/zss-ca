@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { FormFieldLayout } from '@/features/shared/components/form-field-layout'
 import type { UseFormReturn } from 'react-hook-form'
-import type { ContactFormInput } from '../../api/schema'
+import type { ContactFormInput } from '../../api'
 import { contactFormData } from './contact-form.data'
 
 type ContactFormFieldsProps = {

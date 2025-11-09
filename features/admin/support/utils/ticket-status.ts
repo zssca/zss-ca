@@ -1,7 +1,4 @@
-import type { Database } from '@/lib/types/database.types'
-
-type TicketStatus = Database['public']['Tables']['support_ticket']['Row']['status']
-type TicketPriority = Database['public']['Tables']['support_ticket']['Row']['priority']
+import type { TicketPriority, TicketStatus } from '@/lib/types/database-aliases'
 
 /**
  * Badge variant type for UI display

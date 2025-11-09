@@ -6,6 +6,8 @@ import {
   Item,
   ItemContent,
   ItemDescription,
+  ItemGroup,
+  ItemHeader,
   ItemMedia,
   ItemTitle,
 } from '@/components/ui/item'
@@ -65,7 +67,7 @@ export function AdminQuickActionsGrid({ stats }: AdminQuickActionsGridProps): Re
   ]
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" role="list" aria-label="Quick actions">
+    <ItemGroup className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-label="Quick actions">
       {actions.map(({ title, description, href, icon: Icon, highlight, primaryCta, secondaryCta }) => (
         <HoverCard key={title} openDelay={150} closeDelay={150}>
           <HoverCardTrigger asChild>
@@ -73,15 +75,20 @@ export function AdminQuickActionsGrid({ stats }: AdminQuickActionsGridProps): Re
               variant="outline"
               asChild
               role="listitem"
-              className="cursor-pointer transition-colors hover:bg-accent/50"
+              className="h-full cursor-pointer transition-colors hover:bg-accent/50"
             >
-              <Link href={href}>
-                <ItemMedia variant="icon">
-                  <Icon aria-hidden="true" />
-                </ItemMedia>
+              <Link href={href} className="flex h-full flex-col">
+                <ItemHeader className="items-start gap-3">
+                  <ItemMedia variant="icon">
+                    <Icon aria-hidden="true" />
+                  </ItemMedia>
+                  <div className="space-y-1">
+                    <ItemTitle>{title}</ItemTitle>
+                    <ItemDescription>{description}</ItemDescription>
+                  </div>
+                </ItemHeader>
                 <ItemContent>
-                  <ItemTitle>{title}</ItemTitle>
-                  <ItemDescription>{description}</ItemDescription>
+                  <p className="text-sm text-muted-foreground">{highlight}</p>
                 </ItemContent>
               </Link>
             </Item>
@@ -106,6 +113,6 @@ export function AdminQuickActionsGrid({ stats }: AdminQuickActionsGridProps): Re
           </HoverCardContent>
         </HoverCard>
       ))}
-    </div>
+    </ItemGroup>
   )
 }

@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { createClient } from '@/lib/supabase/server'
+import { hasServerSupabaseEnv } from '@/lib/supabase/env'
 import type { Database } from '@/lib/types/database.types'
 
 type Profile = Database['public']['Tables']['profile']['Row']
@@ -32,6 +33,10 @@ export interface UserWithProfile {
  * ```
  */
 export async function getUserWithProfile(): Promise<UserWithProfile | null> {
+  if (!hasServerSupabaseEnv()) {
+    return null
+  }
+
   const supabase = await createClient()
   const {
     data: { user },

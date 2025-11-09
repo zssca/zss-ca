@@ -1,18 +1,19 @@
 import type { LucideIcon } from 'lucide-react'
 
-export interface HomeSupportHighlight {
+export interface SupportHighlight {
   id: string
   eyebrow?: string
   title: string
   description: string
   icon?: LucideIcon
   iconLabel?: string
+  helper?: string
 }
 
-export interface HomeSupportData {
+export interface SupportData {
   heading: string
   subheading: string
-  highlights: HomeSupportHighlight[]
+  highlights: SupportHighlight[]
   cta: {
     ariaLabel?: string
     label: string

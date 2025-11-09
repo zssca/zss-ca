@@ -8,4 +8,12 @@ export interface FaqData {
   heading: string
   subheading: string
   items: FaqItem[]
+  cta: {
+    title: string
+    description: string
+    primary: {
+      label: string
+      href: string
+    }
+  }
 }

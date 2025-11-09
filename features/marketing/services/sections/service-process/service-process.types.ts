@@ -3,6 +3,7 @@ export interface ServiceProcessPhase {
   label: string
   title: string
   description: string
+  deliverables: string[]
 }
 
 export interface ServiceProcessData {

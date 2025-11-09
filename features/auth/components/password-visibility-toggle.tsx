@@ -26,7 +26,7 @@ export function PasswordVisibilityToggle({
       type="button"
       pressed={pressed}
       onPressedChange={onPressedChange}
-      variant="ghost"
+      variant="default"
       size="sm"
       className={cn('size-8 rounded-md', className)}
       aria-label={pressed ? hideLabel : showLabel}

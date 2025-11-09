@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
+import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -9,6 +9,7 @@ import { Kbd } from '@/components/ui/kbd'
 import { Spinner } from '@/components/ui/spinner'
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   FieldGroup,
   FieldLegend,
@@ -24,18 +25,22 @@ import {
 import { replyToTicketSchema, type ReplyToTicketInput } from '../api/schema'
 import { replyToTicketAction } from '../api/mutations'
 import { FormFieldLayout } from '@/features/shared/components/form-field-layout'
+import { Lock } from 'lucide-react'
 
 interface ReplyFormProps {
   ticketId: string
+  isAdmin?: boolean
 }
 
-export function ReplyForm({ ticketId }: ReplyFormProps): React.JSX.Element {
+export function ReplyForm({ ticketId, isAdmin = false }: ReplyFormProps): React.JSX.Element {
   const router = useRouter()
-  const form = useForm<ReplyToTicketInput>({
-    resolver: zodResolver(replyToTicketSchema),
+  const resolver = zodResolver(replyToTicketSchema) as Resolver<ReplyToTicketInput>
+  const form = useForm<ReplyToTicketInput, undefined, ReplyToTicketInput>({
+    resolver,
     defaultValues: {
       ticketId,
       message: '',
+      isInternal: false,
     },
   })
 
@@ -48,7 +53,7 @@ export function ReplyForm({ ticketId }: ReplyFormProps): React.JSX.Element {
       })
     } else {
       toast.success('Reply sent successfully')
-      form.reset({ ticketId, message: '' })
+      form.reset({ ticketId, message: '', isInternal: false })
       router.refresh()
     }
   }
@@ -97,6 +102,39 @@ export function ReplyForm({ ticketId }: ReplyFormProps): React.JSX.Element {
                   )}
                 />
               </FieldGroup>
+
+              {/* Internal Note Toggle - Only show for admin users */}
+              {isAdmin && (
+                <FieldGroup>
+                  <FormField
+                    control={form.control}
+                    name="isInternal"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <label
+                            className="flex items-center gap-2 text-sm font-medium cursor-pointer"
+                            onClick={() => field.onChange(!field.value)}
+                          >
+                            <Lock className="h-3.5 w-3.5" />
+                            Internal Note
+                          </label>
+                          <p className="text-xs text-muted-foreground">
+                            This note will only be visible to staff members
+                          </p>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </FieldGroup>
+              )}
             </FieldSet>
 
             <div className="flex gap-2">
@@ -107,7 +145,7 @@ export function ReplyForm({ ticketId }: ReplyFormProps): React.JSX.Element {
                 type="button"
                 variant="outline"
                 disabled={form.formState.isSubmitting}
-                onClick={() => form.reset({ ticketId, message: '' })}
+                onClick={() => form.reset({ ticketId, message: '', isInternal: false })}
               >
                 Clear
               </Button>

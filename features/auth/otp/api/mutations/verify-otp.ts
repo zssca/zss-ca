@@ -30,7 +30,7 @@ export async function verifyOTPAction(data: unknown): Promise<{ error: string; f
     return { error: otpResult?.message || 'Invalid or expired code' }
   }
 
-  // If email confirmation, update user metadata
+  // If email confirmation, update user metadata and profile
   if (result.data.type === 'email_confirmation') {
     const { error: updateError } = await supabase.auth.updateUser({
       data: { email_verified: true },
@@ -38,6 +38,19 @@ export async function verifyOTPAction(data: unknown): Promise<{ error: string; f
 
     if (updateError) {
       return { error: 'Failed to confirm email' }
+    }
+
+    // Update profile table to mark email as verified
+    if (otpResult.profile_id) {
+      const { error: profileError } = await supabase
+        .from('profile')
+        .update({ email_verified: true })
+        .eq('id', otpResult.profile_id)
+
+      if (profileError) {
+        console.error('Failed to update profile email_verified status:', profileError)
+        // Don't fail the entire verification if this update fails
+      }
     }
   }
 

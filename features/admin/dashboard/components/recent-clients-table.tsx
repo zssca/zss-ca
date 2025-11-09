@@ -16,7 +16,6 @@ import {
 } from '@tanstack/react-table'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import {
   Table,
   TableBody,
@@ -26,6 +25,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { DataTableViewOptions } from './data-table-view-options'
+import { DataTablePagination } from './data-table-pagination'
 
 interface Client {
   id: string
@@ -53,6 +53,16 @@ const columns: ColumnDef<Client>[] = [
         <span>{row.getValue<string>('contact_name') ?? 'Unknown'}</span>
       </div>
     ),
+    filterFn: (row, id, value) => {
+      const term = String(value ?? '').toLowerCase()
+      if (!term) {
+        return true
+      }
+      const name = row.getValue<string>(id)?.toLowerCase() ?? ''
+      const email = row.original.contact_email?.toLowerCase() ?? ''
+      const company = row.original.company_name?.toLowerCase() ?? ''
+      return [name, email, company].some((field) => field.includes(term))
+    },
   },
   {
     accessorKey: 'contact_email',
@@ -74,7 +84,6 @@ export function RecentClientsTable({ clients }: ClientsTableProps): React.JSX.El
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({})
-  const [search, setSearch] = useState('')
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -91,17 +100,28 @@ export function RecentClientsTable({ clients }: ClientsTableProps): React.JSX.El
     initialState: { pagination: { pageSize: 8 } },
   })
 
-  const nameColumn = table.getColumn('contact_name')
-  if (nameColumn) {
-    nameColumn.setFilterValue(search)
+  const searchFilter = columnFilters.find((filter) => filter.id === 'contact_name')
+  const searchValue = typeof searchFilter?.value === 'string' ? searchFilter.value : ''
+
+  const handleSearchChange = (value: string) => {
+    setColumnFilters((previousFilters) => {
+      const withoutSearch = previousFilters.filter((filter) => filter.id !== 'contact_name')
+      if (!value) {
+        return withoutSearch
+      }
+      return [
+        ...withoutSearch,
+        { id: 'contact_name', value },
+      ]
+    })
   }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <Input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
+          value={searchValue}
+          onChange={(event) => handleSearchChange(event.target.value)}
           placeholder="Search by name or company..."
           className="w-full lg:max-w-xs"
         />
@@ -145,29 +165,7 @@ export function RecentClientsTable({ clients }: ClientsTableProps): React.JSX.El
         </Table>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-sm text-muted-foreground">
-          {table.getFilteredRowModel().rows.length} results
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+      <DataTablePagination table={table} />
     </div>
   )
 }

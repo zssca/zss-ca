@@ -2,8 +2,8 @@
  * Layout Components
  *
  * Organized layout components for different areas of the application:
- * - dashboard/ - Dashboard layouts for admin and client portals
  * - marketing/ - Public-facing marketing header and footer
+ * - dashboard/ - Dashboard layout components (admin/client portals)
  * - shared/ - Components shared across multiple contexts
  *
  * Organization:
@@ -12,19 +12,11 @@
  * - features/marketing/[page]/sections/ = marketing page sections
  */
 
-// Dashboard Layout Components
-export {
-  DashboardLayout,
-  Breadcrumbs,
-  NavUser,
-  Search,
-  type DashboardLayoutProps,
-  type SidebarItem,
-  type SidebarSection,
-} from './dashboard'
-
 // Marketing Layout Components
 export { Header, Footer } from './marketing'
+
+// Dashboard Layout Components
+export * from './dashboard'
 
 // Shared Components
 export { UserMenu } from './shared'

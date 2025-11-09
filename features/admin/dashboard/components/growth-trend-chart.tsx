@@ -1,20 +1,6 @@
 'use client'
 
-import {
-  Item,
-  ItemContent,
-  ItemDescription,
-  ItemTitle,
-  ItemHeader,
-  ItemSeparator,
-} from '@/components/ui/item'
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
-} from '@/components/ui/chart'
+import * as React from 'react'
 import {
   BarChart,
   Bar,
@@ -23,64 +9,103 @@ import {
   CartesianGrid,
 } from 'recharts'
 
-interface GrowthTrendChartProps {
-  totalClients: number
-  activeSubscriptions: number
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemHeader,
+  ItemTitle,
+} from '@/components/ui/item'
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart'
+import { cn } from '@/lib/utils/index'
+
+export interface MonthlyGrowthData {
+  month: string
+  clients: number
+  subscriptions: number
 }
 
-export function GrowthTrendChart({ totalClients, activeSubscriptions }: GrowthTrendChartProps): React.JSX.Element {
-  const trendData = [
-    { month: 'May', clients: Math.max(0, totalClients - 25), subscriptions: Math.max(0, activeSubscriptions - 20) },
-    { month: 'Jun', clients: Math.max(0, totalClients - 20), subscriptions: Math.max(0, activeSubscriptions - 16) },
-    { month: 'Jul', clients: Math.max(0, totalClients - 15), subscriptions: Math.max(0, activeSubscriptions - 12) },
-    { month: 'Aug', clients: Math.max(0, totalClients - 10), subscriptions: Math.max(0, activeSubscriptions - 8) },
-    { month: 'Sep', clients: Math.max(0, totalClients - 5), subscriptions: Math.max(0, activeSubscriptions - 4) },
-    { month: 'Oct', clients: totalClients, subscriptions: activeSubscriptions },
-  ]
+interface GrowthTrendChartProps {
+  trendData: MonthlyGrowthData[]
+  className?: string
+}
+
+const chartConfig = {
+  clients: {
+    label: 'Clients',
+    color: 'var(--chart-1)',
+  },
+  subscriptions: {
+    label: 'Subscriptions',
+    color: 'var(--chart-2)',
+  },
+} satisfies ChartConfig
+
+export function GrowthTrendChart({
+  trendData,
+  className,
+}: GrowthTrendChartProps): React.JSX.Element {
+
+  const [activeMetric, setActiveMetric] = React.useState<keyof typeof chartConfig>('clients')
+
+  const totals = {
+    clients: trendData.reduce((sum, entry) => sum + entry.clients, 0),
+    subscriptions: trendData.reduce((sum, entry) => sum + entry.subscriptions, 0),
+  }
 
   return (
-    <Item variant="outline" aria-label="Growth trends chart">
-      <ItemHeader>
-        <ItemTitle>Growth Trend</ItemTitle>
+    <Item
+      role="listitem"
+      variant="outline"
+      aria-label="Growth trends chart"
+      className={cn('h-full flex flex-col', className)}
+    >
+      <ItemHeader className="flex-col items-stretch gap-0 border-b pb-0">
+        <div className="flex flex-1 flex-col justify-center gap-1 pb-3 pt-4 sm:pt-3">
+          <ItemTitle className="text-base font-semibold sm:text-lg">Growth Trend</ItemTitle>
+          <ItemDescription>Totals across the last six months</ItemDescription>
+        </div>
+        <ItemActions className="relative -mx-4 mt-2 flex w-[calc(100%+2rem)] gap-0 border-t sm:-mx-6 sm:w-[calc(100%+3rem)] sm:border-t-0">
+          {(['clients', 'subscriptions'] as const).map((key) => (
+            <button
+              key={key}
+              type="button"
+              data-active={activeMetric === key}
+              className="data-[active=true]:bg-muted/60 flex flex-1 flex-col justify-center gap-1 border-r px-4 py-3 text-left text-muted-foreground transition last:border-r-0 sm:px-6 sm:py-4"
+              onClick={() => setActiveMetric(key)}
+            >
+              <span className="text-xs">{chartConfig[key].label}</span>
+              <span className="text-lg font-semibold leading-none text-foreground sm:text-2xl">
+                {totals[key].toLocaleString()}
+              </span>
+            </button>
+          ))}
+        </ItemActions>
       </ItemHeader>
-
-      <ItemSeparator />
-
-      <ItemContent>
-        <ItemDescription>Client and subscription growth over time</ItemDescription>
+      <ItemContent className="mt-4 flex-1 px-0 pb-4 pr-2 sm:px-0 sm:pb-6 sm:pr-4">
         <ChartContainer
-          config={{
-            clients: {
-              label: 'Clients',
-              color: 'var(--chart-1)',
-            },
-            subscriptions: {
-              label: 'Subscriptions',
-              color: 'var(--chart-2)',
-            },
-          }}
-          className="min-h-[300px]"
+          config={chartConfig}
+          className="aspect-auto h-[280px] w-full"
         >
           <BarChart
             accessibilityLayer
             data={trendData}
-            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+            margin={{ top: 12, right: 12, left: 8, bottom: 0 }}
           >
             <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-            <XAxis dataKey="month" />
+            <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
             <YAxis />
-            <ChartTooltip content={<ChartTooltipContent />} cursor={{ fill: 'var(--muted)' }} />
-            <ChartLegend content={<ChartLegendContent />} />
+            <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
             <Bar
-              dataKey="clients"
-              fill="var(--chart-1)"
-              radius={[4, 4, 0, 0]}
-              maxBarSize={60}
-            />
-            <Bar
-              dataKey="subscriptions"
-              fill="var(--chart-2)"
-              radius={[4, 4, 0, 0]}
+              dataKey={activeMetric}
+              fill={`var(--color-${activeMetric})`}
+              radius={[6, 6, 0, 0]}
               maxBarSize={60}
             />
           </BarChart>

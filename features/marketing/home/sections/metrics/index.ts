@@ -1,3 +1,3 @@
-export { HomeMetrics } from './metrics'
-export { homeMetricsData } from './metrics.data'
-export type { HomeMetric, HomeMetricsData } from './metrics.types'
+export { Metrics } from './metrics'
+export { metricsData } from './metrics.data'
+export type { Metric, MetricsData } from './metrics.types'

@@ -2,6 +2,7 @@ export interface CtaData {
   heading: string
   description: string
   ariaLabel: string
+  bullets: string[]
   cta: {
     primary: {
       label: string

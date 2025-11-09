@@ -40,7 +40,7 @@ export function UpdatePasswordNewPasswordField({
   onPasswordInput,
 }: UpdatePasswordNewPasswordFieldProps): React.JSX.Element {
   return (
-    <Field data-invalid={!!fieldErrors?.password}>
+    <Field data-invalid={!!fieldErrors?.['password']}>
       <div className="flex items-center justify-between gap-2">
         <FieldLabel htmlFor="password">
           Password
@@ -64,9 +64,9 @@ export function UpdatePasswordNewPasswordField({
           data-webauthn="true"
           required
           aria-required="true"
-          aria-invalid={!!fieldErrors?.password}
+          aria-invalid={!!fieldErrors?.['password']}
           aria-describedby={[
-            fieldErrors?.password ? 'update-password-error' : null,
+            fieldErrors?.['password'] ? 'update-password-error' : null,
             PASSWORD_STRENGTH_ID,
             PASSWORD_HINT_ID,
           ].filter(Boolean).join(' ') || undefined}
@@ -85,10 +85,10 @@ export function UpdatePasswordNewPasswordField({
       <FieldDescription className="text-xs text-muted-foreground">
         Press <Kbd>Enter</Kbd> to save once your password is ready.
       </FieldDescription>
-      {fieldErrors?.password ? (
+      {fieldErrors?.['password'] ? (
         <FieldError
           id="update-password-error"
-          errors={fieldErrors.password.map((message) => ({ message }))}
+          errors={fieldErrors['password'].map((message) => ({ message }))}
         />
       ) : null}
     </Field>

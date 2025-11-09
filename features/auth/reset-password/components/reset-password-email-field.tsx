@@ -30,11 +30,11 @@ export function ResetPasswordEmailField({
   emailError,
   onEmailErrorChange,
 }: ResetPasswordEmailFieldProps): React.JSX.Element {
-  const emailServerErrorId = fieldErrors?.email ? 'reset-email-error' : null
+  const emailServerErrorId = fieldErrors?.['email'] ? 'reset-email-error' : null
   const emailClientErrorId = emailError ? 'reset-email-error-client' : null
 
   return (
-    <Field data-invalid={!!fieldErrors?.email || !!emailError}>
+    <Field data-invalid={!!fieldErrors?.['email'] || !!emailError}>
       <FieldLabel htmlFor="email">
         Email
         <span className="ml-1 text-destructive" aria-hidden="true">*</span>
@@ -52,7 +52,7 @@ export function ResetPasswordEmailField({
           autoComplete="email"
           required
           aria-required="true"
-          aria-invalid={!!fieldErrors?.email || !!emailError}
+          aria-invalid={!!fieldErrors?.['email'] || !!emailError}
           aria-describedby={[
             emailServerErrorId,
             emailClientErrorId,
@@ -75,10 +75,10 @@ export function ResetPasswordEmailField({
       <FieldDescription id={EMAIL_HINT_ID} className="text-xs text-muted-foreground">
         We&apos;ll send a verification code to this address. Press <Kbd>Enter</Kbd> to submit quickly.
       </FieldDescription>
-      {fieldErrors?.email ? (
+      {fieldErrors?.['email'] ? (
         <FieldError
           id="reset-email-error"
-          errors={fieldErrors.email.map((message) => ({ message }))}
+          errors={fieldErrors['email'].map((message) => ({ message }))}
         />
       ) : null}
       {emailError ? (

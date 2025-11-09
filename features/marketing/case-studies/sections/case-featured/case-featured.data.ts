@@ -10,6 +10,7 @@ export const caseFeaturedData: CaseFeaturedData = {
     { label: 'Page load speed', value: '-1.8s' },
     { label: 'New resources launched', value: '12' },
   ],
+  services: ['Journey strategy', 'Next.js rebuild', 'Lead gen experiments'],
   testimonial: {
     quote:
       'The subscription model means our marketing roadmap keeps moving without scoping exercises or change orders. The team feels like an extension of our own.',

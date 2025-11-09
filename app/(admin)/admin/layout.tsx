@@ -1,8 +1,6 @@
 import type { Metadata } from 'next'
-import { headers } from 'next/headers'
 import { DashboardLayout } from '@/components/layout'
 import { ADMIN_SIDEBAR_SECTIONS } from '@/lib/config'
-import { getPageMetadata } from '@/lib/config'
 import { ROUTES } from '@/lib/constants'
 import { createClient, requireAuth, getUserProfile } from '@/lib/supabase'
 
@@ -23,15 +21,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   // ✅ Next.js 15+: Must await headers() and createClient()
   // ✅ Parallel data fetching to avoid waterfall
-  const [headersList, profile] = await Promise.all([
-    headers(), // Get headers (already returns Promise in Next.js 15+)
-    getUserProfile(supabase, user.id), // Get user profile
-  ])
-
-  const pathname = headersList.get('x-pathname') || ''
-
-  // Get page metadata
-  const metadata = getPageMetadata(pathname, 'admin')
+  const profile = await getUserProfile(supabase, user.id)
 
   return (
     <DashboardLayout
@@ -43,8 +33,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       sidebarSections={ADMIN_SIDEBAR_SECTIONS}
       breadcrumbHomeHref={ROUTES.ADMIN_DASHBOARD}
       breadcrumbHomeLabel="Overview"
-      pageTitle={metadata?.title}
-      pageDescription={metadata?.description}
     >
       {children}
     </DashboardLayout>

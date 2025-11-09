@@ -1,10 +1,11 @@
-export interface HomeMetric {
+export interface Metric {
   label: string
   value: string
   helper: string
 }
 
-export interface HomeMetricsData {
+export interface MetricsData {
   heading: string
-  metrics: HomeMetric[]
+  subheading: string
+  metrics: Metric[]
 }

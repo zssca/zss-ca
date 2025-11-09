@@ -119,6 +119,7 @@ export async function replyToTicketAction(data: unknown) {
       support_ticket_id: result.data.ticketId,
       author_profile_id: user.id,
       message: result.data.message,
+      is_internal: result.data.isInternal || false,
     })
 
   if (error) {
@@ -134,7 +135,12 @@ export async function replyToTicketAction(data: unknown) {
     .eq('status', 'open')
 
   // 7. Send reply email to ticket owner if reply is from admin
-  if (profile?.role === 'admin' && ticket.profile_id !== user.id) {
+  // IMPORTANT: Do not send email for internal notes
+  if (
+    profile?.role === 'admin' &&
+    ticket.profile_id !== user.id &&
+    !result.data.isInternal
+  ) {
     const { data: ticketOwner } = await supabase
       .from('profile')
       .select('contact_email, contact_name')

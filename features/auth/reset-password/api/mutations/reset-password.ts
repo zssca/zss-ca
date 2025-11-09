@@ -2,10 +2,12 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { resetPasswordSchema } from '../schema'
 import { sendOTPForPasswordReset } from '@/lib/auth/otp-helpers'
 import { ROUTES } from '@/lib/constants/routes'
+import { rateLimits, checkRateLimit, getClientIdentifier } from '@/lib/rate-limit'
 
 type ResetPasswordState = {
   error?: string | null
@@ -15,6 +17,18 @@ type ResetPasswordState = {
 }
 
 export async function resetPasswordAction(prevState: ResetPasswordState | null, formData: FormData): Promise<ResetPasswordState | never> {
+  // Rate limit by IP address - 3 reset attempts per hour
+  const headersList = await headers()
+  const identifier = getClientIdentifier(headersList)
+  const rateCheck = await checkRateLimit(rateLimits.passwordReset, identifier)
+
+  if (!rateCheck.success) {
+    const minutesUntilReset = Math.ceil((rateCheck.reset - Date.now()) / 60000)
+    return {
+      error: `Too many password reset attempts. Please try again in ${minutesUntilReset} minute(s).`,
+    }
+  }
+
   // Validate input with Zod
   const email = formData.get('email') as string
   const result = resetPasswordSchema.safeParse({ email })

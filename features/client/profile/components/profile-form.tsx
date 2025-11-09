@@ -9,7 +9,6 @@ import { SubmitButton } from './profile-form-submit-button'
 import { ProfileContactFieldsNative } from './profile-contact-fields-native'
 import { ProfileCompanyFieldsNative } from './profile-company-fields-native'
 import { ProfileAddressFieldsNative } from './profile-address-fields-native'
-import { ProfilePreferencesFieldsNative } from './profile-preferences-fields-native'
 
 type Profile = Database['public']['Tables']['profile']['Row']
 
@@ -61,12 +60,6 @@ export function ProfileForm({ profile }: ProfileFormProps): React.JSX.Element {
           errors={state && 'fieldErrors' in state ? state.fieldErrors : undefined}
           isPending={isPending}
         />
-        <ProfilePreferencesFieldsNative
-          profile={profile}
-          errors={state && 'fieldErrors' in state ? state.fieldErrors : undefined}
-          isPending={isPending}
-        />
-
         <div className="flex gap-2">
           <SubmitButton />
           <Button type="reset" variant="outline" disabled={isPending}>

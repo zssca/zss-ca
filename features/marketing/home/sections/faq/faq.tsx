@@ -1,49 +1,63 @@
 'use client'
 
+import Link from 'next/link'
+import { SectionContainer } from '@/components/layout/shared'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import {
-  Item,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemTitle,
-} from '@/components/ui/item'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardFooter, CardTitle } from '@/components/ui/card'
+import { ItemDescription } from '@/components/ui/item'
 import { faqData } from './faq.data'
 
 export function Faq() {
   return (
-    <ItemGroup className="mx-auto w-full max-w-7xl gap-16">
-      <Item className="flex w-full flex-col items-center border-0 p-0 text-center">
-        <ItemContent className="max-w-3xl items-center gap-3 text-center">
-          <ItemTitle className="justify-center">
-            <span className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-              {faqData.heading}
-            </span>
-          </ItemTitle>
-          <ItemDescription className="text-base text-muted-foreground sm:text-lg">
-            {faqData.subheading}
-          </ItemDescription>
-        </ItemContent>
-      </Item>
-      <Item className="w-full flex-col">
-        <Accordion type="single" collapsible className="grid w-full gap-4 md:grid-cols-2">
+    <SectionContainer
+      heading={faqData.heading}
+      description={faqData.subheading}
+      textAlign="center"
+      headerMaxWidth="3xl"
+    >
+      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+        <Accordion
+          type="single"
+          collapsible
+          className="grid w-full gap-4 md:grid-cols-2"
+          aria-label="Frequently asked questions"
+        >
           {faqData.items.map((item) => (
             <AccordionItem key={item.id} value={item.id} className="w-full">
               <AccordionTrigger>
                 <span className="text-left">{item.question}</span>
               </AccordionTrigger>
               <AccordionContent>
-                <p className="text-muted-foreground">{item.answer}</p>
+                <ItemDescription className="line-clamp-none text-muted-foreground">
+                  {item.answer}
+                </ItemDescription>
               </AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>
-      </Item>
-    </ItemGroup>
+
+        <Card className="h-full border-dashed">
+          <CardContent className="space-y-4">
+            <CardTitle className="text-xl font-semibold text-balance">
+              {faqData.cta.title}
+            </CardTitle>
+            <CardDescription className="text-base text-muted-foreground">
+              {faqData.cta.description}
+            </CardDescription>
+          </CardContent>
+          <CardFooter>
+            <Button asChild size="lg">
+              <Link href={faqData.cta.primary.href}>{faqData.cta.primary.label}</Link>
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    </SectionContainer>
   )
 }

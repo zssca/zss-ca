@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { CreditCard, DollarSign, TrendingUp, Users } from 'lucide-react'
 import { getBillingData } from '../api/queries'
 import { createClient } from '@/lib/supabase/server'
@@ -13,11 +14,13 @@ import {
 } from '@/components/ui/table'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
-import { formatDistanceToNow } from 'date-fns'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { InvoicesTable } from './invoices-table'
+import { FailedPaymentsDashboard } from './failed-payments-dashboard'
+import { BillingAlertsDisplay } from './billing-alerts-display'
 
-export async function BillingPageFeature(): Promise<React.JSX.Element> {
+async function SubscriptionsOverview() {
   const _data = await getBillingData()
-
   const supabase = await createClient()
 
   // Fetch subscription data with plan and profile information
@@ -198,5 +201,42 @@ export async function BillingPageFeature(): Promise<React.JSX.Element> {
         </ItemContent>
       </Item>
     </div>
+  )
+}
+
+export async function BillingPageFeature(): Promise<React.JSX.Element> {
+  return (
+    <Tabs defaultValue="overview" className="space-y-6">
+      <TabsList>
+        <TabsTrigger value="overview">Overview</TabsTrigger>
+        <TabsTrigger value="invoices">Invoices</TabsTrigger>
+        <TabsTrigger value="failed-payments">Failed Payments</TabsTrigger>
+        <TabsTrigger value="alerts">Alerts</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="overview" className="space-y-6">
+        <Suspense fallback={<div>Loading subscriptions...</div>}>
+          <SubscriptionsOverview />
+        </Suspense>
+      </TabsContent>
+
+      <TabsContent value="invoices" className="space-y-6">
+        <Suspense fallback={<div>Loading invoices...</div>}>
+          <InvoicesTable />
+        </Suspense>
+      </TabsContent>
+
+      <TabsContent value="failed-payments" className="space-y-6">
+        <Suspense fallback={<div>Loading failed payments...</div>}>
+          <FailedPaymentsDashboard />
+        </Suspense>
+      </TabsContent>
+
+      <TabsContent value="alerts" className="space-y-6">
+        <Suspense fallback={<div>Loading alerts...</div>}>
+          <BillingAlertsDisplay />
+        </Suspense>
+      </TabsContent>
+    </Tabs>
   )
 }

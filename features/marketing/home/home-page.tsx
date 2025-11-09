@@ -1,11 +1,13 @@
 import {
   Hero,
-  HomeMetrics,
+  Partners,
+  Metrics,
   Features,
-  HomeProcess,
-  HomeIndustries,
+  CaseStudiesPreview,
+  Process,
+  Industries,
   PricingPreview,
-  HomeSupport,
+  Support,
   Testimonials,
   Faq,
   Cta,
@@ -33,18 +35,20 @@ export async function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }}
       />
 
-      <div className="container mx-auto flex flex-col gap-20 px-4 py-16 md:py-24">
+      <main className="flex flex-col">
         <Hero />
-        <HomeMetrics />
+        <Partners />
+        <Metrics />
         <Features />
-        <HomeProcess />
-        <HomeIndustries />
+        <CaseStudiesPreview />
+        <Process />
+        <Industries />
         <PricingPreview />
-        <HomeSupport />
+        <Support />
         <Testimonials />
         <Faq />
         <Cta />
-      </div>
+      </main>
     </>
   )
 }

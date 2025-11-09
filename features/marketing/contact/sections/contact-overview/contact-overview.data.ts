@@ -5,9 +5,9 @@ import type { ContactOverviewData } from './contact-overview.types'
 const { contact } = siteConfig
 
 export const contactOverviewData: ContactOverviewData = {
-  heading: "Let's build your next website",
+  heading: "Multiple ways to reach our delivery team",
   subheading:
-    "Share your project goals and we’ll craft a subscription plan that keeps your site performing month after month.",
+    'Share your project goals and we’ll craft a subscription plan, sprint outline, and pricing breakdown in under one business day.',
   channels: [
     {
       label: 'Email',
@@ -29,6 +29,7 @@ export const contactOverviewData: ContactOverviewData = {
       contact.address.country,
     ],
     hours: 'Office hours: Monday–Friday, 9am–5pm MT',
+    note: 'In-person sessions available by appointment only.',
   },
   cta: {
     ariaLabel: 'Book a discovery call via email',

@@ -16,6 +16,7 @@ import {
   ItemContent,
   ItemDescription,
   ItemFooter,
+  ItemGroup,
   ItemHeader,
   ItemMedia,
   ItemTitle,
@@ -41,8 +42,11 @@ export function AdminOverviewStats({ stats }: AdminOverviewStatsProps): React.JS
     : 0
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4" role="list" aria-label="Platform statistics">
-      <TooltipProvider>
+    <TooltipProvider>
+      <ItemGroup
+        className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
+        aria-label="Platform statistics"
+      >
         <Item variant="outline" role="listitem" aria-label="Total clients metric">
           <ItemMedia variant="icon">
             <Users aria-hidden="true" />
@@ -163,18 +167,14 @@ export function AdminOverviewStats({ stats }: AdminOverviewStatsProps): React.JS
             </ItemDescription>
           </ItemContent>
           <ItemFooter>
-            <Button
-              asChild
-              variant="link"
-              size="sm"
-            >
+            <Button asChild variant="link" size="sm">
               <Link href={ROUTES.ADMIN_SUPPORT}>
                 {stats.openTickets > 0 ? 'View tickets' : 'View all'}
               </Link>
             </Button>
           </ItemFooter>
         </Item>
-      </TooltipProvider>
-    </div>
+      </ItemGroup>
+    </TooltipProvider>
   )
 }

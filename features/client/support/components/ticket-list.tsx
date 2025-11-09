@@ -4,6 +4,7 @@ import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemHeader,
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { MessageSquare } from 'lucide-react'
 import type { TicketWithProfile } from '../api/queries'
+import type { TicketPriority, TicketStatus } from '@/lib/types/database-aliases'
 import {
   getTicketStatusVariant,
   getTicketPriorityVariant,
@@ -61,15 +62,15 @@ export function TicketList({ tickets, basePath }: TicketListProps): React.JSX.El
               <ItemContent className="min-w-0 gap-1">
                 <ItemTitle>{ticket.subject}</ItemTitle>
                 <ItemDescription>
-                  {ticket.category.replace('_', ' ')} • {createdAt.toLocaleDateString()}
+                  {ticket.category?.replace('_', ' ') || 'Uncategorized'} • {createdAt.toLocaleDateString()}
                 </ItemDescription>
               </ItemContent>
               <ItemActions className="gap-2">
-                <Badge variant={getTicketPriorityVariant(ticket.priority)}>
-                  {getTicketPriorityLabel(ticket.priority)}
+                <Badge variant={getTicketPriorityVariant(ticket.priority as TicketPriority)}>
+                  {getTicketPriorityLabel(ticket.priority as TicketPriority)}
                 </Badge>
-                <Badge variant={getTicketStatusVariant(ticket.status)}>
-                  {getTicketStatusLabel(ticket.status)}
+                <Badge variant={getTicketStatusVariant(ticket.status as TicketStatus)}>
+                  {getTicketStatusLabel(ticket.status as TicketStatus)}
                 </Badge>
               </ItemActions>
             </Link>

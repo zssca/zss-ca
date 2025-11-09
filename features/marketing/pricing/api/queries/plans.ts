@@ -2,9 +2,13 @@ import 'server-only'
 
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
+import { hasServerSupabaseEnv } from '@/lib/supabase/env'
 import type { Database } from '@/lib/types/database.types'
 
-type Plan = Database['public']['Tables']['plan']['Row']
+type Plan = Database['public']['Tables']['plan']['Row'] & {
+  price_monthly_cents?: number | null
+  price_yearly_cents?: number | null
+}
 
 export interface PlanWithPricing extends Plan {
   priceMonthly?: number
@@ -15,6 +19,10 @@ export interface PlanWithPricing extends Plan {
 // For marketing pages, use dynamic = 'force-static' with revalidate at page level
 // This deduplicates multiple calls within same render (e.g., pricing page + homepage)
 export const getActivePlans = cache(async (): Promise<Plan[]> => {
+  if (!hasServerSupabaseEnv()) {
+    return []
+  }
+
   const supabase = await createClient()
 
   const { data, error } = await supabase
@@ -31,6 +39,9 @@ export const getActivePlans = cache(async (): Promise<Plan[]> => {
       is_active,
       sort_order,
       setup_fee_cents,
+      price_monthly_cents,
+      price_yearly_cents,
+      stripe_product_id,
       stripe_price_id_monthly,
       stripe_price_id_yearly,
       created_at,
@@ -50,6 +61,10 @@ export const getActivePlans = cache(async (): Promise<Plan[]> => {
 // ✅ Next.js 15+: Use React cache() for request deduplication
 // Preview plans for marketing pages - page-level caching via ISR
 export const getPlansForPreview = cache(async (): Promise<PlanWithPricing[]> => {
+  if (!hasServerSupabaseEnv()) {
+    return []
+  }
+
   const supabase = await createClient()
 
   const { data, error } = await supabase
@@ -66,6 +81,9 @@ export const getPlansForPreview = cache(async (): Promise<PlanWithPricing[]> => 
       is_active,
       sort_order,
       setup_fee_cents,
+      price_monthly_cents,
+      price_yearly_cents,
+      stripe_product_id,
       stripe_price_id_monthly,
       stripe_price_id_yearly,
       created_at,
@@ -83,8 +101,14 @@ export const getPlansForPreview = cache(async (): Promise<PlanWithPricing[]> => 
   return (
     data?.map((plan) => ({
       ...plan,
-      priceMonthly: undefined,
-      priceYearly: undefined,
+      priceMonthly:
+        typeof plan.price_monthly_cents === 'number'
+          ? plan.price_monthly_cents / 100
+          : undefined,
+      priceYearly:
+        typeof plan.price_yearly_cents === 'number'
+          ? plan.price_yearly_cents / 100
+          : undefined,
     })) ?? []
   )
 })

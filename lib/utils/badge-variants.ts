@@ -8,10 +8,10 @@
  * consistent colors and avoid inline ternary logic in components.
  */
 
-import type { BadgeProps } from '@/components/ui/badge'
 import type { Database } from '@/lib/types/database.types'
 
-type BadgeVariant = BadgeProps['variant']
+// Badge variant type
+type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline' | null | undefined
 type TicketStatus = Database['public']['Tables']['support_ticket']['Row']['status']
 type TicketPriority = Database['public']['Tables']['support_ticket']['Row']['priority']
 type SubscriptionStatus = Database['public']['Tables']['subscription']['Row']['status']
@@ -104,8 +104,6 @@ export function getSubscriptionBadgeVariant(status: SubscriptionStatus): BadgeVa
       return 'outline'
     case 'incomplete':
       return 'secondary'
-    case 'incomplete_expired':
-      return 'destructive'
     case 'unpaid':
       return 'destructive'
     default:
