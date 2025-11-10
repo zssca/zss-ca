@@ -1,1835 +1,442 @@
-# Next.js 15/16 Patterns
+# 04-nextjs Compact Rules
+Source: docs/rules/04-nextjs.md
+Created: November 10, 2025
+Last Updated: November 10, 2025
+Stack Version: Next.js 15+/16 (App Router)
 
-**Purpose:** Framework-specific patterns for Next.js App Router with async params, caching strategies, and Server Actions
+## Summary
+- Enforce Next.js 16 async params/searchParams handling, cache components, proxy migration, and explicit fetch caching.
+- Use updateTag/revalidateTag/revalidatePath/refresh plus cacheTag/cacheLife to orchestrate cache behavior.
+- Structure routes with default.tsx, Suspense streaming, Promise.all, and client `use()` patterns for async props.
+- Harden production via proxy CSP headers, rate limiting, OpenTelemetry, structured logging, and runtime selection.
+- Run detection commands to catch forbidden legacy APIs, missing awaits, uncached fetches, and invalid caching setups.
 
-**Last Updated:** 2025-11-03
-**Stack Version:** Next.js 15.5.0, React 19.0.0, Node.js 20.9.0+
+## Recent Updates (Next.js 15+)
+- **revalidateTag with profile parameter**: Use `revalidateTag(tag, 'max')` for stale-while-revalidate semantics (recommended) or `revalidateTag(tag, 'hours')` for custom profiles
+- **'use cache' directive**: Preferred over `unstable_cache` for deterministic functions; pair with `cacheTag()` and `cacheLife()` for control
+- **Image optimization**: Configure `localPatterns` and `remotePatterns` in `next.config.ts`; set `minimumCacheTTL` for cache duration
+- **Fetch deduplication**: React `cache()` now handles per-request deduplication automatically; combine with `fetch` tags for cross-request caching
+- **Streaming improvements**: Use narrow Suspense boundaries with granular skeletons; avoid single page-level Suspense wrapper
+- **Metadata API**: Always `await params` in `generateMetadata`; use `cache()` to deduplicate shared queries between metadata and page
 
-**Recent Updates:**
-- **Next.js 15.5.0** (November 2025) - Latest stable version with React 19 support
-- **Stable Node.js Middleware** (15.2+) - Middleware now supports both Edge and Node.js runtimes
-- **OpenTelemetry Built-in** - Native instrumentation support with @vercel/otel
-- **Dynamic IO API** (`use cache` directive) - Incremental caching model for functions and components
-- **PPR Still Experimental** - Partial Prerendering NOT production-ready (use `experimental_ppr`)
-- **Breaking: Fetch no longer cached by default** - Must use `cache: 'force-cache'` explicitly
-- **Breaking: Route Handler GET not cached** - Must set `dynamic = 'force-static'`
-- **Breaking: `default.tsx` REQUIRED** for parallel routes (build fails without it)
-- `updateTag()` API for read-your-writes consistency (Server Actions only)
-- `refresh()` API for client router refresh from Server Actions
-- `cacheLife` profiles now stable (no longer `unstable_cacheLife`)
-- Turbopack file system caching available (`experimental.turbopackFileSystemCacheForDev`)
+## Checklist
+1. Enable `cacheComponents: true` in `next.config.ts` so Cache Components are available everywhere.
+2. Keep `'use cache'` directives paired with `cacheTag()` (and optionally `cacheLife()`) to describe invalidation behavior.
+3. Replace legacy `middleware.ts` with `proxy.ts` exporting `export default async function proxy()` for the Node runtime boundary.
+4. Leave Turbopack as the dev/prod bundler and turn on filesystem caching for fast reloads.
+5. Await every `params` access (pages, layouts, templates, route handlers) because Next.js 15+ passes them as Promises.
+6. Await every `searchParams` access for the same reason; treat them as `Promise<Record<string,string | undefined>>`.
+7. Await `cookies()` and `headers()` whenever they are read on the server.
+8. Await `createClient()` whenever you instantiate Supabase in Server Components, Server Actions, or route handlers.
+9. Add `'use server'` to the top of every Server Action file to guarantee server-only execution.
+10. Add `'use client'` as the first line (before imports) for every hook-using component.
+11. Keep page files under 200 lines and delegate logic to `features/*` modules.
+12. Wrap slow sections in `<Suspense>` with dedicated skeleton fallbacks to stream UI progressively.
+13. Provide `loading.tsx` per route segment when streaming benefits UX.
+14. Keep `error.tsx` as `'use client'` components that log to Sentry and expose a reset button.
+15. Supply `not-found.tsx` to customize 404s triggered via `notFound()`.
+16. Add `default.tsx` to every parallel route slot (`app/@slot/default.tsx`); builds fail without them.
+17. Accept slot props (e.g., `{ children, modal }`) in layouts when parallel routes are used.
+18. Use intercepting route folders `(.)`, `(..)`, `(...)` only alongside real routes and matching defaults.
+19. Use React’s `use()` inside Client Components to unwrap params/searchParams promises passed from server parents.
+20. Never declare a Client Component as `async`; rely on `use()` or server wrappers to deal with Promises.
+21. Launch independent Supabase queries concurrently with `Promise.all`.
+22. Deduplicate repeated async calls per request using React’s `cache()` helper.
+23. Explicitly set `cache: 'force-cache'` or `cache: 'no-store'` on every `fetch`; defaults are no-cache.
+24. Attach `next: { tags: [...] }` to cached fetches so they can be invalidated by tag.
+25. Define hierarchical tag helpers like `appointments`, `appointments:business:${id}`, `appointment:${id}`.
+26. Call `updateTag(tag)` inside Server Actions immediately after successful writes needing read-your-writes consistency (clears cache instantly).
+27. Call `refresh()` inside Server Actions when client router state must update immediately (badges, notifications).
+28. Use `revalidateTag(tag, 'max')` for background stale-while-revalidate updates (serves stale data immediately, regenerates in background); use `revalidateTag(tag, 'hours')` for custom profile durations.
+29. Use `revalidatePath(path, 'page' | 'layout')` after destructive operations needing full route refresh; prefer tag-based invalidation for targeted updates.
+30. Configure custom `cacheLife` profiles in `next.config.ts` for domain-level caching windows (e.g., profiles: { salons: { revalidate: 3600 }, analytics: { revalidate: 300 } }).
+31. Use `'use cache'` for deterministic functions/components that don't depend on request-specific data (cookies, headers); always emit `cacheTag()` and `cacheLife()` inside.
+32. Combine `'use cache'` with React `cache()` when you need cross-request caching plus per-request deduplication; use for shared DB queries between metadata and page.
+33. Avoid `unstable_cache` (deprecated); migrate to `'use cache'` directive with `cacheTag()` and `cacheLife()` for cleaner semantics.
+34. Chain tag invalidations from specific to general (record tag → scoped tag → global tag) after writes/deletes.
+35. Fetch record metadata before deletes so you know which scoped tags (business/staff) to invalidate.
+36. Keep fetch waterfalls out of Server Components by either parallelizing with `Promise.all` or splitting via Suspense.
+37. Export `revalidate` numbers for ISR routes (marketing/blog, e.g., `export const revalidate = 3600`) and leave dashboards dynamic (`revalidate = 0` or omitted).
+38. Use `runtime: 'edge'` only for lightweight middleware needing global reach; keep heavy logic on the Node runtime.
+39. Use `runtime: 'nodejs'` when middleware touches databases, file systems, or Node-only APIs.
+40. Document caching/tag strategies per feature to keep invalidation logic understandable; include decision on `updateTag` vs `revalidateTag` vs `revalidatePath`.
+41. Use detection scripts (ripgrep, find) to ensure these structural rules stay enforced in CI.
+42. Keep marketing routes SSG or ISR (`revalidate = 86400`) while user dashboards remain SSR for freshness (`revalidate = 0` or dynamic APIs like `cookies()`).
+43. Use `fetchCache = 'default-no-store'` or `'force-no-store'` when you want all fetches in a route to default to no caching; use sparingly, prefer explicit fetch-level controls.
+44. Export `runtime = 'edge'` in route segments requiring edge behavior and ensure code stays edge-compatible (no Node imports).
+45. Export `runtime = 'nodejs'` in segments needing Node APIs to avoid edge limitations.
+46. Treat `generateMetadata` as async; `await params` and DB calls before returning metadata objects; use `cache()` to share queries with page component.
+47. Use `template.tsx` to force rerender on navigation for animations or state resets.
+48. Keep route handlers (`route.ts`) limited to HTTP verbs (GET/POST/etc.) and avoid mixing Server Action logic.
+49. Parse request bodies with `await request.json()` and validate using schemas before writing data.
+50. Secure webhooks via shared secrets (`x-webhook-secret`) and respond with 401 when invalid.
+51. Rate limit route handlers and Server Actions using Upstash `Ratelimit` or equivalent to prevent abuse.
+52. Return 429 responses with `X-RateLimit-*` headers when limits are exceeded.
+53. Use `app/error.tsx` plus `useEffect` to report client-side errors to Sentry.
+54. Instrument server code with `pino` or similar structured logger, logging both success and failure contexts.
+55. Register OpenTelemetry in `instrumentation.ts` and set OTLP endpoints via env vars.
+56. Wrap Server Actions inside `tracer.startActiveSpan` to capture DB/cache spans and record exceptions.
+57. Use `registerOTel` only when `process.env.NEXT_RUNTIME === 'nodejs'` to avoid edge bundling.
+58. Provide CSP headers via proxy/middleware and pass generated nonces to layout/head tags.
+59. Attach `nonce={nonce}` to inline `<script>` or `<style>` tags referencing the header value.
+60. Add security headers like `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `Referrer-Policy`, and HSTS for every HTML response.
+61. Ensure proxy responses call `response.headers.set('x-nonce', nonce)` so layouts can read it via `headers()`.
+62. Use Suspense fallback components (Skeletons) that mirror final layout dimensions to minimize layout shift.
+63. Use nested Suspense within slow components (e.g., analytics chart inside analytics panel) for granular streaming.
+64. Keep `<Suspense>` boundaries narrow; avoid wrapping entire pages in a single fallback.
+65. Provide dedicated skeleton components like `<QuickStatsSkeleton />` or `<ChartSkeleton />` for clarity.
+66. Use `Promise.all` when fetching `salon`, `staff`, `reviews`, `services` to avoid sequential latency.
+67. Use `next: { tags: [...] }` on remote API fetches (analytics, marketing) so you can invalidate them with `revalidateTag`.
+68. For Node runtime middleware, dynamically import heavy modules (`const fs = await import('fs/promises')`) to reduce initial load.
+69. Use `redirect()` after Server Actions when you need to navigate post-mutation and ensure caches were invalidated first.
+70. Keep actions returning JSON results when client components need data without navigation.
+71. Use `refresh()` sparingly; prefer precise tag invalidation to avoid full router refresh cost.
+72. Flatten sequential `await` statements in route handlers by combining them if dependencies allow.
+73. Use `cacheLife` inline objects (e.g., `{ revalidate: 3600, stale: 300, expire: 7200 }`) only when you cannot reuse a named profile.
+74. Keep tag names descriptive; never use generic names like `'data'`, `'cache'`, or `'items'`.
+75. Mirror tag strings between fetch calls, `'use cache'` blocks, and invalidation sites.
+76. For deletes, fetch the record first to capture `business_id`, `staff_id`, or `salon_id` needed for tag invalidation.
+77. Keep `revalidatePath` usage targeted; only call it for pages whose data cannot be covered by tags.
+78. Spread invalidation responsibilities: nodes closest to the data they mutate should emit the right tags.
+79. Document caching flows (which actions call updateTag, revalidateTag, refresh) in feature READMEs.
+80. Keep `proxy.ts` matchers limited to relevant segments to reduce overhead.
+81. Ensure `proxy.ts` gracefully handles missing auth tokens by redirecting to login or returning 401.
+82. Prefer Server Actions for mutations triggered by React forms; reserve route handlers for external clients/webhooks.
+83. Use `useActionState` + Server Actions for form submissions; connect revalidation logic inside the action.
+84. Ensure Server Actions parse inputs with Zod before writing to Supabase.
+85. Guard Server Actions with authentication (`supabase.auth.getUser()`) before running DB queries.
+86. Always `await supabase.auth.getUser()` because `createClient()` is async; handle `!user` with thrown errors.
+87. Use `redirect()` or `return` objects to send responses after actions finish invalidation.
+88. Use `revalidateTag('notifications', 'max')` after marking notifications as read to refresh lists lazily.
+89. Call `refresh()` after toggling favorites so icons update instantly client-side.
+90. Keep route handlers returning `NextResponse.json(...)` with status codes and JSON bodies.
+91. Rate-limit Server Actions via Upstash keyed on user IDs to block brute-force operations (reviews, bookings).
+92. Provide instrumentation spans for DB inserts (`db.insert.*`) and cache invalidations (`cache.invalidate`) to ease debugging.
+93. Use environment variables like `NEXT_OTEL_VERBOSE` and `OTEL_EXPORTER_OTLP_ENDPOINT` to control telemetry output.
+94. Keep instrumentation sample rates high in dev (1.0) and lower in prod to control cost.
+95. Document unstoppable `cacheLife` and caching strategies per route in developer docs.
+96. Keep `app/layout.tsx` asynchronous if it reads headers for nonce injection.
+97. Use `headers()` (awaited) to retrieve per-request values like CSP nonces or geolocation info.
+98. Always return `<html>` and `<body>` from layout functions; never wrap the tree in `<div>`.
+99. Use route groups `(marketing)`, `(business)`, etc., to scope layouts without influencing URL paths.
+100. Keep default route group containing homepage when multiple root layouts exist.
+101. Accept that navigating between different root layouts triggers full document reload; design UX accordingly.
+102. Use intercepting routes for modals (e.g., `@modal/(.)photos/[id]/page.tsx`) and ensure default slot fallback returns `null`.
+103. Keep `PhotoModal` or similar components inside Suspense to handle awaited params.
+104. Provide `app/@modal/default.tsx` returning null to satisfy Next.js 16 parallel route requirements.
+105. Use `router.push`/`router.replace` inside Client Components paired with `use()` results to update search filters.
+106. Use `URLSearchParams` to build query strings from client filter controls.
+107. Implement search pages as Server Components receiving awaited `searchParams` when SEO-critical.
+108. Provide `Skeleton` components using Tailwind classes to match eventual layout sizes.
+109. Keep `app/(business)/dashboard/page.tsx` returning a synchronous tree with Suspense boundaries rather than sequential awaits.
+110. Use `<Suspense>` around `QuickStats`, `RecentAppointments`, and `AnalyticsChart` to stream them independently.
+111. Rely on React streaming to send fast bits first; avoid blocking on analytics queries.
+112. Use `next: { revalidate: 3600 }` on remote analytics API fetches to cache for specific durations (preferred over deprecated `cache: 'force-cache'`).
+113. Use `revalidateTag(\`analytics:${businessId}\`, 'max')` when server actions need to refresh cached analytics data.
+114. Limit `'use cache'` usage to deterministic data functions and annotate with comments describing cache scope.
+115. Build tag helper modules (e.g., `const tags = { appointments: 'appointments', appointment: id => ... }`) for reuse.
+116. Keep tag helper modules typed and exported from shared libs so features share naming conventions.
+117. Use `updateTag(tags.appointment(id))` plus `updateTag(tags.businessAppointments(businessId))` after appointment writes.
+118. Always revalidate path `/business/appointments` after appointment create/delete to refresh SSR list pages.
+119. Avoid `revalidatePath` for small updates; prefer tag invalidation for minimal overhead.
+120. Use `refresh()` sparingly; each call refreshes router caches for the entire current page.
+121. Document which Server Actions call `updateTag`, `revalidateTag`, `revalidatePath`, and `refresh` for auditability.
+122. Use SSG/ISR for marketing routes by exporting `revalidate` numbers; avoid forcing `dynamic = 'force-static'` in Next.js 16.
+123. Keep dashboards dynamic by omitting cache directives or setting `revalidate = 0`.
+124. Use `fetchCache = 'default-no-store'` when you want fetch calls inside a segment to default to `no-store`.
+125. Use `fetchCache = 'only-cache'` rarely, only when you want builds to fail if cached data missing.
+126. Resist mixing SSR and ISR on the same page; instead, split content into streaming sections with Suspense.
+127. When using `use cache`, avoid referencing request-specific data (cookies, headers) inside the cached scope.
+128. Use `cacheTag('resource', 'resource:scope')` patterns to emit multiple tags for a single cached function.
+129. Call `cacheLife('profileName')` inside `'use cache'` blocks to apply named cache profile durations.
+130. Use inline cacheLife objects for ad-hoc caching needs when named profiles don't fit.
+131. Keep `'use cache'` directive at the top of the module or function before imports (similar to `'use client'` semantics).
+132. Use `cache()` plus `next: { tags: [...] }` on third-party fetches so you can revalidate them without refetching every time.
+133. Avoid `unstable_cacheLife` and `unstable_cache` APIs; use stable `cacheLife` and `'use cache'` directive instead (Next.js 15+).
+134. Detect `'unstable_cacheLife'` and `unstable_cache` via `rg` and migrate to `cacheLife` and `'use cache'` patterns.
+135. Ensure `updateTag` and `revalidateTag` share identical tag strings; typos mean invalidation won't work.
+136. Store tag string factories alongside query/mutation modules to avoid mismatches.
+137. Document caching and invalidation flows per feature in `docs/` or feature README files.
+138. Use detection commands to ensure `.route.ts` files do not reference `updateTag` or `refresh`.
+139. Use detection commands to ensure `'use cache'` blocks include `cacheTag` or `cacheLife`.
+140. Use detection commands to ensure `fetch` calls include `cache` options or `next.revalidate` to avoid implicit `no-store`.
+141. Use detection commands to ensure `params`/`searchParams` references include `await`.
+142. Use detection commands to ensure parallel route directories contain `default.tsx`.
+143. Use detection commands to ensure Server Actions include `'use server'`.
+144. Use detection commands to ensure Client Components with hooks include `'use client'` on line 1.
+145. Use detection commands to ensure legacy Pages Router APIs (getServerSideProps, getStaticProps, etc.) are absent.
+146. Use detection commands to ensure tag names aren't generic words like `data` or `cache`.
+147. Use detection commands to ensure `fetch` calls supplying tags also set `cache` or `next.revalidate`.
+148. Use detection commands to flag async Client Components (should never exist).
+149. Use detection commands to flag `updateTag`/`refresh` usage outside `'use server'` files.
+150. Use detection commands to flag `fetch` calls lacking `cache` or `next.revalidate` arguments.
+151. Use detection commands to catch potential waterfalls by finding sequential `await` statements without `Promise.all`.
+152. Use detection commands to ensure instrumentation (`instrumentation.ts`) exists in production apps.
+153. Use detection commands to flag `experimental_ppr` usage; PPR is still experimental and should be avoided in prod.
+154. Use detection commands to flag Edge runtime files calling `createClient` or other Node-only APIs (invalid on edge).
+155. Use detection commands to flag single Suspense usage so teams add more granular boundaries.
+156. Use detection commands to flag API routes lacking references to rate limiting utilities.
+157. Use detection commands to ensure proxy or middleware includes CSP and security headers.
+158. Use detection commands to ensure `'use cache'` modules mention `cacheTag` or `cacheLife`.
+159. Use detection commands to ensure `updateTag` invalidations include hierarchical scope (record and list tags).
+160. Use detection commands to ensure `revalidatePath` invocations pass `'page'` or `'layout'`.
+161. Use detection commands to ensure `revalidateTag` invocations supply a cache profile (e.g., `'max'`, `'hours'`, custom name).
+162. Keep CLI scripts (npm run lint/typecheck) integrated with detection commands so CI blocks noncompliant code.
+163. Run `npm run typecheck` plus custom grep checks before every commit touching Next.js files.
+164. Use `rg -q "cacheComponents:\\s*true"` in CI to ensure configs keep Cache Components enabled.
+165. Add CI jobs failing if `middleware.ts` exists or `proxy.ts` is missing.
+166. Use `find app -type d -name \"@*\"` in CI to verify `default.tsx` presence inside each slot directory.
+167. Confirm `proxy.ts` attaches security headers; detection scripts should flag missing CSP or security headers.
+168. Confirm `proxy.ts` handles authless requests with redirects or 401 responses as appropriate.
+169. Keep `matcher` arrays tight to avoid unnecessary proxy overhead on static assets.
+170. Document the `cacheTag` namespace per domain (appointments, salons, analytics, notifications, staff).
+171. Keep `tags` helpers exported from shared modules for reuse by fetchers and mutation actions.
+172. Use `revalidateTag('notifications', 'max')` for background refresh, reserving `updateTag` for immediate write-through.
+173. Use `refresh()` in Server Actions like `markNotificationAsRead` to update client indicator badges instantly.
+174. Use `revalidatePath('/business/appointments', 'page')` after appointment create/delete to refresh SSR list data.
+175. Use `revalidateTag(\`appointment:${id}\`, 'max')` for background updates triggered by webhooks.
+176. Use `revalidateTag('appointments', 'max')` for admin-level operations touching all records.
+177. Use `cacheTag(\`widget:${businessId}\`)` inside cached widgets so `updateTag` can target them.
+178. Keep `'use cache'` modules pure; do not call `createClient` or user-specific APIs inside cached code without careful scoping.
+179. Use `cacheLife('analytics')` inside analytics fetchers so invalidation matches the configured profile.
+180. Keep remote fetch TTLs (`next.revalidate`) aligned with cache profiles to avoid stale data drift.
+181. Document fallback behavior when caches expire (SWR, TTL) so teams know user expectations.
+182. Continue using Suspense skeletons to mask backend latency even when caching is enabled.
+183. Use `router.prefetch` sparingly; rely on Next.js automatic prefetch for `<Link>` when visible.
+184. Keep `<Link>` usage for navigation; use `router.push` only when interactions happen outside anchor contexts.
+185. Use `router.replace` for silent filter updates so history entries stay manageable.
+186. Combine `startTransition` with router updates when triggered inside Client Components to keep UI responsive.
+187. Use `useRouter` inside client filters and pair with `use()` data to synchronize UI and query params.
+188. Keep `URLSearchParams` logic encapsulated to avoid manual string concatenation mistakes.
+189. After server writes, prefer `redirect('/path')` over `router.push` from client to avoid duplicate logic.
+190. Keep detection commands for `redirect()` usage to ensure caches were invalidated before navigation.
+191. Avoid `console.log` in production; rely on `logger` or telemetry for diagnostics.
+192. Provide environment-specific logging levels via `LOG_LEVEL` env var for the pino logger.
+193. Use `NextResponse` helpers to set JSON responses and headers rather than manual `Response`.
+194. Keep `instrumentation.ts` in the project root so Next.js loads telemetry automatically.
+195. Verify `instrumentation.ts` exports `register()` and conditionally imports `@vercel/otel`.
+196. Keep `NEXT_OTEL_VERBOSE` toggled on locally to troubleshoot spans; reduce in production.
+197. Use detection commands to ensure instrumentation file exists and is referenced.
+198. Maintain a migration checklist verifying each Next.js upgrade requirement before bumping versions.
+199. Review caching and invalidation flows whenever Next.js releases new cache APIs or changes semantics.
+200. Cross-reference architecture, TypeScript, React, API, forms, UI, and auth rule files before implementing Next.js features.
+201. Revisit this checklist whenever touching routing, caching, or Server Action logic to guarantee conformance.
 
----
+## FORBIDDEN PATTERNS (Next.js 15+)
 
-## Quick Decision Tree
+❌ **Never use these patterns:**
 
+### Deprecated Caching APIs
+- `unstable_cache()` → Use `'use cache'` directive with `cacheTag()` and `cacheLife()` instead
+- `unstable_cacheLife()` → Use `cacheLife()` function (stable API in Next.js 15+)
+- `middleware.ts` as a standalone file → Migrate to `proxy.ts` with `'use server'`
+
+### Legacy Pages Router (Never in App Router)
+- `getStaticProps` → Use `export const revalidate` with Server Components
+- `getServerSideProps` → Use dynamic Server Components with no caching
+- `getStaticPaths` → Use `generateStaticParams` in App Router
+- `res.revalidate()` in API routes → Use `revalidateTag()` in Server Actions/Route Handlers
+
+### Anti-patterns
+- Async Client Components (`async function Component()`) → Only Server Components can be async
+- `cache: 'force-cache'` with no `next.tags` → Add `next: { tags: ['meaningful-tag'] }` for invalidation
+- Uncached fetches (`fetch(url)` without `cache` or `next.revalidate`) → Explicitly set `cache: 'no-store'` or `cache: 'force-cache'` + tags
+- Single page-level `<Suspense>` wrapper → Use nested Suspense for granular streaming
+- `updateTag()` in route handlers → Only in Server Actions or specialized server endpoints
+- `revalidatePath()` for every mutation → Use tag-based invalidation unless full page refresh needed
+- Mixing `updateTag` and `revalidateTag` for same data → Choose one strategy per resource
+- `refresh()` after every Server Action → Only when client indicators need instant update (badges, favorites)
+
+### Caching Anti-patterns
+- Generic tag names (`'data'`, `'cache'`, `'items'`) → Use hierarchical names like `'appointments'`, `'appointment:${id}'`
+- Forgetting to `await params` → Always `await params` and `searchParams` in Server Components, `generateMetadata`, and route handlers
+- Storing request-specific data in `'use cache'` blocks → Never use cookies/headers inside `'use cache'`; pass them as params
+- Not documenting cache invalidation strategy → Document which actions invalidate which tags per feature
+
+### Image Configuration Failures
+- Omitting `remotePatterns` or `localPatterns` → Configure allowed image sources in `next.config.ts`
+- Not setting `minimumCacheTTL` → Set `minimumCacheTTL: 31536000` (1 year) for immutable CDN images
+- Using deprecated `domains` array → Use `remotePatterns` instead (deprecated since Next.js 12.3)
+
+## DETECTION COMMANDS (Run in CI)
+
+```bash
+# ✅ Verify Cache Components are enabled
+rg -q "cacheComponents:\s*true" next.config.ts || echo "FAIL: Cache Components not enabled"
+
+# ✅ Flag deprecated unstable_cache and unstable_cacheLife
+rg "unstable_cache|unstable_cacheLife" app/  && echo "FAIL: Found unstable_cache/unstable_cacheLife"
+
+# ✅ Ensure 'use cache' blocks have cacheTag or cacheLife
+rg -A 3 "'use cache'" app/ | rg -c "cacheTag|cacheLife" || echo "WARN: 'use cache' blocks may be missing tags"
+
+# ✅ Flag async Client Components (syntax error - will fail typecheck)
+rg "async function.*\(\)" app/ | grep "use client" && echo "FAIL: Found async Client Component"
+
+# ✅ Ensure fetch calls have cache option or next.revalidate
+rg "fetch\(" app/ | grep -v "cache:|next.revalidate" && echo "WARN: Uncached fetch found"
+
+# ✅ Verify all params/searchParams are awaited
+rg "params\.|searchParams\." app/ | grep -v "await params\|await searchParams" && echo "WARN: Unawaited params/searchParams"
+
+# ✅ Flag updateTag outside 'use server' context
+rg "updateTag\(" app/ --type ts | grep -v "'use server'" && echo "WARN: updateTag outside Server Action"
+
+# ✅ Verify middleware.ts doesn't exist (should be proxy.ts)
+test -f middleware.ts && echo "FAIL: middleware.ts found - migrate to proxy.ts"
+test ! -f proxy.ts && echo "FAIL: proxy.ts missing"
+
+# ✅ Ensure tag names are not generic
+rg "tags:\s*\['(data|cache|items)'" app/ && echo "FAIL: Found generic tag names"
+
+# ✅ Flag single page-level Suspense (look for one <Suspense> per file)
+find app -name "page.tsx" -exec grep -l "Suspense" {} \; | while read f; do
+  count=$(grep -o "<Suspense" "$f" | wc -l)
+  [ $count -lt 2 ] && echo "WARN: $f has only $count Suspense boundary (consider nested)"
+done
+
+# ✅ Verify parallel route defaults exist
+find app -type d -name "@*" | while read dir; do
+  test ! -f "$dir/default.tsx" && echo "FAIL: $dir missing default.tsx"
+done
+
+# ✅ Ensure Server Actions have 'use server'
+find app -name "*.ts" -path "*/actions/*" -exec grep -L "'use server'" {} \; | grep -v ".test.ts" && echo "FAIL: Server Action missing 'use server'"
+
+# ✅ Ensure Client Components with hooks have 'use client' on line 1
+rg -l "useRouter|useState|useEffect" app/ --type tsx | while read f; do
+  head -1 "$f" | grep -q "'use client'" || echo "WARN: $f may need 'use client'"
+done
+
+# ✅ Flag Pages Router APIs (should not exist in App Router)
+rg "getStaticProps|getServerSideProps|getStaticPaths" app/ && echo "FAIL: Found deprecated Pages Router APIs"
+
+# ✅ Verify revalidateTag calls include profile parameter
+rg "revalidateTag\([^)]*\)" app/ | grep -v "'max'|'hours'|custom" && echo "WARN: revalidateTag missing profile parameter"
+
+# ✅ Ensure 'use cache' directive is at top of module
+rg -B 5 "'use cache'" app/ | rg "^[^']*import" && echo "WARN: 'use cache' not at module top"
 ```
-Fetching data?
-├─ On page/layout → Use async Server Component with fetch/Supabase
-├─ On mutation → Use Server Action with revalidation
-└─ On API endpoint → Use Route Handler (GET/POST/etc.)
 
-Caching strategy?
-├─ User writes data → Use updateTag() for immediate consistency (Server Actions only)
-├─ Background refresh → Use revalidateTag(tag, 'max')
-├─ Client router refresh → Use refresh() in Server Action
-├─ Entire route → Use revalidatePath(path, 'page' | 'layout')
-└─ Never cache → Use { cache: 'no-store' }
-
-Accessing params?
-├─ In page/layout → Must await params promise
-├─ In generateMetadata → Must await params promise
-├─ In Route Handler → Must await params from segmentData
-└─ In Client Component → Use React.use(params)
-
-Need to invalidate cache?
-├─ After mutation (immediate) → updateTag('resource') [Server Actions only]
-├─ After mutation (background) → revalidateTag('resource', 'max')
-├─ Client router refresh → refresh() [Server Actions only]
-├─ Entire page → revalidatePath('/path', 'page')
-└─ All routes → revalidatePath('/', 'layout')
+### Running Detection Suite
+```bash
+# Run all detections and fail on FAIL (not WARN)
+npm run lint
+npm run typecheck
+./scripts/verify-nextjs-rules.sh  # Custom script with above commands
 ```
 
----
+## IMAGE OPTIMIZATION GUIDELINES
 
-## Critical Rules
+### Configuration (`next.config.ts`)
+```typescript
+const nextConfig: NextConfig = {
+  images: {
+    // Allow local image paths
+    localPatterns: [
+      {
+        pathname: '/public/images/**',
+        search: '',
+      },
+    ],
 
-### ✅ MUST Follow
-1. **Await all params/searchParams** - Next.js 15+ requires Promise handling
-2. **Await createClient()** - Supabase client creation is now async
-3. **Include cache profile in revalidateTag()** - Second parameter required: `revalidateTag(tag, 'max')`
-4. **Include type in revalidatePath()** - Second parameter required: `revalidatePath(path, 'page')`
-5. **Use updateTag() in Server Actions** - For immediate read-your-writes consistency (Server Actions only)
-6. **Use refresh() for client updates** - To refresh router cache after mutations (Server Actions only)
-7. **Create default.tsx for parallel routes** - Build will FAIL without it in Next.js 15+
-8. **Explicitly cache fetch requests** - Default changed to no-cache in Next.js 15
-9. **Use 'use server' in Server Actions** - Explicit directive required
-10. **Use 'use client' for hooks** - Client Components must declare directive
-11. **Namespace cache tags hierarchically** - `resource`, `resource:id`, `resource:id:detail`
-12. **Keep pages under 200 lines** - Delegate logic to features/
+    // Allow remote image sources
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'cdn.example.com',
+        port: '',
+        pathname: '/assets/**',
+        search: '',
+      },
+    ],
 
-### ❌ FORBIDDEN
-1. **Pages Router patterns** - No getServerSideProps, getStaticProps, getInitialProps
-2. **Synchronous params access** - Must await in Next.js 15+
-3. **Synchronous cookies()/headers()** - Must await in Next.js 15+
-4. **revalidateTag() without cache profile** - `revalidateTag('tag')` will error (Next.js 15+)
-5. **revalidatePath() without type** - `revalidatePath('/path')` will error (Next.js 15+)
-6. **Parallel routes without default.tsx** - Build will fail (Next.js 15+)
-7. **Generic cache tag names** - No 'data', 'cache', 'stuff'
-8. **Client Components with async** - Use React.use() instead
-9. **Assuming fetch is cached** - Must explicitly set `cache: 'force-cache'` (Next.js 15+)
-10. **Using updateTag() outside Server Actions** - Only works in Server Actions
-11. **Using refresh() outside Server Actions** - Only works in Server Actions
-12. **Runtime config** - serverRuntimeConfig/publicRuntimeConfig removed (Next.js 15+)
-13. **Using PPR in production** - Still experimental, not production-ready
-14. **Sequential data fetching** - Use Promise.all() for parallel queries
-15. **Missing CSP headers** - Production apps must implement Content Security Policy
-16. **No rate limiting** - Public API routes must have abuse prevention
-17. **Missing OpenTelemetry** - Production apps need instrumentation
-18. **'use cache' without cacheTag()** - Cannot invalidate granularly
-19. **Edge runtime for heavy operations** - Use Node.js runtime for DB/file operations
-20. **Single Suspense for entire page** - Use granular boundaries for streaming
-
----
-
-## Patterns
-
-### Pattern 1: Async Page with Params (Next.js 16)
-**When to use:** Every page with dynamic route segments
-**Implementation:**
-```tsx
-// ✅ CORRECT - Async page with await params
-// app/(business)/salons/[salonId]/page.tsx
-import { Suspense } from 'react'
-import { SalonDetail } from '@/features/business/salons'
-import { Skeleton } from '@/components/ui/skeleton'
-
-export default async function Page({
-  params
-}: {
-  params: Promise<{ salonId: string }>
-}) {
-  // ✅ Next.js 15+: Must await params
-  const { salonId } = await params
-
-  return (
-    <Suspense fallback={<Skeleton className="h-96 w-full" />}>
-      <SalonDetail salonId={salonId} />
-    </Suspense>
-  )
-}
-
-// ❌ WRONG - Synchronous params access
-export default function Page({
-  params
-}: {
-  params: { salonId: string }
-}) {
-  // ❌ Error: params is a Promise in Next.js 16
-  const { salonId } = params
-  return <SalonDetail salonId={salonId} />
+    // Cache optimized images for extended period
+    minimumCacheTTL: 31536000, // 1 year (immutable)
+  },
 }
 ```
 
-### Pattern 2: Search Page with searchParams (Next.js 16)
-**When to use:** Pages with query parameters (search, filters, pagination)
-**Implementation:**
-```tsx
-// ✅ CORRECT - Async searchParams handling
-// app/search/page.tsx
-import { Suspense } from 'react'
-import { SearchResults } from '@/features/customer/salon-search'
+### Best Practices
+- Use `localPatterns` to restrict local image paths
+- Use `remotePatterns` with specific patterns to prevent arbitrary image optimization
+- Set `minimumCacheTTL` high (31536000 seconds = 1 year) for static/immutable images
+- Tag image fetches with meaningful names for invalidation: `next: { tags: ['product-images', `product:${id}`] }`
+- Use `<Image priority />` only for above-fold images to avoid layout shift
+- Provide `width` and `height` to prevent Cumulative Layout Shift (CLS)
+- Use responsive images with `sizes` prop for different breakpoints
 
-export default async function SearchPage({
-  searchParams
-}: {
-  searchParams: Promise<{ q?: string; page?: string; location?: string }>
-}) {
-  // ✅ Next.js 15+: Must await searchParams
-  const { q, page, location } = await searchParams
+## METADATA API PATTERNS
 
-  return (
-    <div className="container py-8">
-      <h1 className="text-3xl font-bold mb-6">Search Results</h1>
-      <Suspense fallback={<div>Searching...</div>}>
-        <SearchResults
-          query={q ?? ''}
-          page={parseInt(page ?? '1')}
-          location={location}
-        />
-      </Suspense>
-    </div>
-  )
-}
+### Server-side Metadata Generation
+```typescript
+import { Metadata } from 'next'
+import { cache } from 'react'
 
-// ❌ WRONG - Synchronous searchParams
-export default function SearchPage({
-  searchParams
-}: {
-  searchParams: { q?: string }
-}) {
-  // ❌ Error: searchParams is a Promise in Next.js 16
-  const { q } = searchParams
-  return <SearchResults query={q ?? ''} />
-}
-```
-
-### Pattern 3: Dynamic Metadata (Next.js 16)
-**When to use:** SEO optimization for dynamic pages
-**Implementation:**
-```tsx
-// ✅ CORRECT - Async generateMetadata
-// app/(business)/salons/[salonId]/page.tsx
-import type { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
+// Deduplicate DB calls between metadata and page
+const getPost = cache(async (id: string) => {
+  return db.query.posts.findFirst({ where: eq(posts.id, id) })
+})
 
 export async function generateMetadata({
-  params
+  params,
 }: {
-  params: Promise<{ salonId: string }>
+  params: Promise<{ id: string }>
 }): Promise<Metadata> {
-  // ✅ Next.js 15+: Must await params
-  const { salonId } = await params
-
-  // ✅ Next.js 15+: Must await createClient()
-  const supabase = await createClient()
-
-  const { data: salon } = await supabase
-    .from('salons_view')
-    .select('name, description')
-    .eq('id', salonId)
-    .single()
+  const { id } = await params
+  const post = await getPost(id)
 
   return {
-    title: salon?.name ? `${salon.name} · ENORAE` : 'Salon · ENORAE',
-    description: salon?.description ?? 'Book your appointment today',
+    title: post.title,
+    description: post.excerpt,
     openGraph: {
-      title: salon?.name ?? 'Salon',
-      description: salon?.description ?? '',
-      type: 'website',
+      title: post.title,
+      description: post.excerpt,
+      images: [{ url: post.imageUrl }],
     },
   }
 }
 
-// ❌ WRONG - Synchronous params in generateMetadata
-export function generateMetadata({
-  params
-}: {
-  params: { salonId: string }
-}): Metadata {
-  // ❌ Error: generateMetadata must be async and await params
-  const { salonId } = params
-  return { title: salonId }
-}
-```
-
-### Pattern 4: Server Action with updateTag (Next.js 16)
-**When to use:** Creating/updating data where user must see changes immediately
-**Implementation:**
-```tsx
-// ✅ CORRECT - Server Action with updateTag
-// features/business/appointments/api/mutations.ts
-'use server'
-
-import { createClient } from '@/lib/supabase/server'
-import { updateTag, revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
-import { appointmentSchema } from '../schema'
-
-export async function createAppointment(input: unknown) {
-  // ✅ Next.js 15+: Must await createClient()
-  const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-
-  const payload = appointmentSchema.parse(input)
-
-  const { data, error } = await supabase
-    .schema('scheduling')
-    .from('appointments')
-    .insert({ ...payload, business_id: user.id })
-    .select()
-    .single()
-
-  if (error) throw error
-
-  // ✅ Immediate consistency for user's write
-  updateTag(`appointment:${data.id}`)
-  updateTag('appointments')
-  updateTag(`appointments:${user.id}`)
-
-  // ✅ Next.js 15+: revalidatePath requires type parameter
-  revalidatePath('/business/appointments', 'page')
-
-  redirect(`/business/appointments/${data.id}`)
-}
-
-// ❌ WRONG - Using revalidateTag for writes
-export async function createAppointment(input: unknown) {
-  const supabase = await createClient() // Still wrong without 'use server'
-  const { data } = await supabase.from('appointments').insert(input).select().single()
-
-  // ❌ Error: Should use updateTag() for immediate consistency
-  revalidateTag('appointments', 'max')
-
-  // ❌ Error: Missing type parameter
-  revalidatePath('/business/appointments')
-}
-```
-
-### Pattern 5: Background Revalidation with revalidateTag (Next.js 16)
-**When to use:** Non-critical updates that can refresh in background
-**Implementation:**
-```tsx
-// ✅ CORRECT - revalidateTag for background refresh
-'use server'
-
-import { createClient } from '@/lib/supabase/server'
-import { revalidateTag } from 'next/cache'
-
-export async function incrementViewCount(appointmentId: string) {
-  // ✅ Next.js 15+: Must await createClient()
-  const supabase = await createClient()
-
-  await supabase
-    .from('appointments')
-    .update({ view_count: supabase.rpc('increment') })
-    .eq('id', appointmentId)
-
-  // ✅ Background refresh - not critical for UX
-  // ✅ Next.js 15+: Requires cache profile
-  revalidateTag(`appointment:${appointmentId}`, 'max')
-}
-
-export async function markNotificationRead(notificationId: string) {
-  const supabase = await createClient()
-
-  await supabase
-    .from('notifications')
-    .update({ read_at: new Date().toISOString() })
-    .eq('id', notificationId)
-
-  // ✅ Background refresh with custom profile
-  revalidateTag(`notifications`, 'hours')
-}
-
-// ❌ WRONG - Missing cache profile
-export async function incrementViewCount(appointmentId: string) {
-  const supabase = await createClient()
-  await supabase.from('appointments').update({ view_count: 1 }).eq('id', appointmentId)
-
-  // ❌ Error: revalidateTag requires second parameter in Next.js 15+
-  revalidateTag(`appointment:${appointmentId}`)
-}
-```
-
-### Pattern 6: Client Router Refresh with refresh() (Next.js 15.1+)
-**When to use:** After mutations when you need to refresh client-side router cache
-**Implementation:**
-```tsx
-// ✅ CORRECT - refresh() for client router updates
-'use server'
-
-import { createClient } from '@/lib/supabase/server'
-import { refresh } from 'next/cache'
-
-export async function markNotificationAsRead(notificationId: string) {
-  // ✅ Next.js 15.1+: Must await createClient()
-  const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-
-  await supabase
-    .from('notifications')
-    .update({ read_at: new Date().toISOString() })
-    .eq('id', notificationId)
-    .eq('user_id', user.id)
-
-  // ✅ Refresh client router - updates notification count in header
-  // ✅ Server Actions only - not available in Route Handlers
-  refresh()
-}
-
-export async function toggleFavorite(salonId: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-
-  const { data: existing } = await supabase
-    .from('favorites')
-    .select()
-    .eq('salon_id', salonId)
-    .eq('user_id', user.id)
-    .single()
-
-  if (existing) {
-    await supabase.from('favorites').delete().eq('id', existing.id)
-  } else {
-    await supabase.from('favorites').insert({ salon_id: salonId, user_id: user.id })
-  }
-
-  // ✅ Refresh client router - updates favorite icon state
-  refresh()
-}
-
-// ❌ WRONG - Using refresh() outside Server Action
-export async function GET(request: NextRequest) {
-  // ❌ Error: refresh() only works in Server Actions
-  refresh()
-  return NextResponse.json({ success: true })
-}
-```
-
-### Pattern 7: Route Handler with Async Params (Next.js 15+)
-**When to use:** API endpoints for external webhooks or non-form submissions
-**Implementation:**
-```tsx
-// ✅ CORRECT - Route Handler with async params
-// app/api/webhooks/[provider]/route.ts
-import { NextRequest, NextResponse } from 'next/server'
-import { revalidateTag } from 'next/cache'
-
-export async function POST(
-  request: NextRequest,
-  segmentData: { params: Promise<{ provider: string }> }
-) {
-  // ✅ Next.js 15+: Must await params
-  const { provider } = await segmentData.params
-
-  const secret = request.headers.get('x-webhook-secret')
-  if (secret !== process.env.WEBHOOK_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const body = await request.json()
-
-  // Handle webhook based on provider
-  if (provider === 'stripe') {
-    // ✅ Next.js 15+: Requires cache profile
-    revalidateTag('transactions', 'max')
-  }
-
-  return NextResponse.json({ received: true })
-}
-
-// ❌ WRONG - Synchronous params access
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { provider: string } }
-) {
-  // ❌ Error: params is a Promise in Next.js 16
-  const { provider } = params
-  return NextResponse.json({ provider })
-}
-```
-
-### Pattern 8: Parallel Routes with default.tsx (Next.js 16)
-**When to use:** Modal intercepts, parallel sections, conditional UI
-**Implementation:**
-```
-// ✅ CORRECT - Parallel route structure
-app/
-├── layout.tsx
-├── page.tsx
-├── @modal/
-│   ├── default.tsx           ← REQUIRED in Next.js 16
-│   └── (.)photos/
-│       └── [id]/page.tsx
-└── photos/
-    └── [id]/page.tsx
-```
-
-```tsx
-// ✅ CORRECT - default.tsx for parallel route
-// app/@modal/default.tsx
-export default function Default() {
-  return null
-}
-
-// ✅ CORRECT - Modal intercept page
-// app/@modal/(.)photos/[id]/page.tsx
-import { Suspense } from 'react'
-import { PhotoModal } from '@/features/gallery/photo-modal'
-
-export default async function Modal({
-  params
+export default async function PostPage({
+  params,
 }: {
   params: Promise<{ id: string }>
 }) {
-  return (
-    <Suspense fallback={null}>
-      <PhotoModal params={params} />
-    </Suspense>
-  )
-}
+  const { id } = await params
+  const post = await getPost(id) // Reuses cached result
 
-// ✅ CORRECT - Layout accepting parallel slots
-// app/layout.tsx
-export default function RootLayout({
-  children,
-  modal
-}: {
-  children: React.ReactNode
-  modal: React.ReactNode
-}) {
-  return (
-    <html lang="en">
-      <body>
-        {children}
-        {modal}
-      </body>
-    </html>
-  )
-}
-
-// ❌ WRONG - Missing default.tsx
-app/
-├── @modal/
-│   └── (.)photos/[id]/page.tsx  ← Build will FAIL without default.tsx
-```
-
-### Pattern 9: Fetch with Cache Tags
-**When to use:** Caching external API data with granular invalidation
-**Implementation:**
-```tsx
-// ✅ CORRECT - Tagged fetch for cache control
-// features/analytics/api/queries.ts
-export async function getAnalytics(businessId: string) {
-  const res = await fetch(`https://api.analytics.com/stats/${businessId}`, {
-    next: {
-      tags: ['analytics', `analytics:${businessId}`],
-      revalidate: 3600, // 1 hour
-    },
-  })
-
-  if (!res.ok) throw new Error('Failed to fetch analytics')
-  return res.json()
-}
-
-// Invalidate from Server Action
-'use server'
-export async function refreshAnalytics(businessId: string) {
-  // ✅ Next.js 15+: Requires cache profile
-  revalidateTag(`analytics:${businessId}`, 'max')
-}
-
-// ❌ WRONG - No cache tags AND not explicitly cached
-export async function getAnalytics(businessId: string) {
-  // ❌ Missing tags - cannot invalidate granularly
-  // ❌ Not cached - fetch is no longer cached by default in Next.js 15+
-  const res = await fetch(`https://api.analytics.com/stats/${businessId}`)
-  return res.json()
-}
-
-// ✅ CORRECT - Explicitly cache fetch requests (Next.js 15+)
-export async function getAnalytics(businessId: string) {
-  // ✅ Next.js 15+ requires explicit cache: 'force-cache'
-  const res = await fetch(`https://api.analytics.com/stats/${businessId}`, {
-    cache: 'force-cache', // Required in Next.js 15+
-    next: {
-      tags: ['analytics', `analytics:${businessId}`],
-      revalidate: 3600,
-    },
-  })
-  return res.json()
+  return <article>{post.content}</article>
 }
 ```
 
-### Pattern 10: Client Component with Async Props
-**When to use:** Client Components that receive params/searchParams
-**Implementation:**
-```tsx
-// ✅ CORRECT - Client Component using React.use()
-'use client'
-
-import { use } from 'react'
-import { useRouter } from 'next/navigation'
-
-export function SalonFilters({
-  searchParams
-}: {
-  searchParams: Promise<{ location?: string; service?: string }>
-}) {
-  // ✅ Client Components cannot be async - use React.use()
-  const { location, service } = use(searchParams)
-  const router = useRouter()
-
-  function handleFilterChange(key: string, value: string) {
-    const params = new URLSearchParams()
-    if (value) params.set(key, value)
-    router.push(`/search?${params.toString()}`)
-  }
-
-  return (
-    <div>
-      <input
-        value={location ?? ''}
-        onChange={(e) => handleFilterChange('location', e.target.value)}
-      />
-      <input
-        value={service ?? ''}
-        onChange={(e) => handleFilterChange('service', e.target.value)}
-      />
-    </div>
-  )
-}
-
-// ❌ WRONG - Async Client Component
-'use client'
-
-// ❌ Error: Client Components cannot be async
-export async function SalonFilters({ searchParams }) {
-  const { location } = await searchParams
-  return <div>{location}</div>
-}
-```
-
-### Pattern 11: Streaming with Suspense
-**When to use:** Slow data fetching that shouldn't block page render
-**Implementation:**
-```tsx
-// ✅ CORRECT - Streaming with Suspense boundaries
-// app/(business)/dashboard/page.tsx
-import { Suspense } from 'react'
-import { QuickStats } from '@/features/business/dashboard/components/quick-stats'
-import { RecentAppointments } from '@/features/business/dashboard/components/recent-appointments'
-import { AnalyticsChart } from '@/features/business/dashboard/components/analytics-chart'
-import { Skeleton } from '@/components/ui/skeleton'
-
-export default function Dashboard() {
-  return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Dashboard</h1>
-
-      {/* Fast data - renders immediately */}
-      <Suspense fallback={<Skeleton className="h-32 w-full" />}>
-        <QuickStats />
-      </Suspense>
-
-      <div className="grid grid-cols-2 gap-6">
-        {/* Medium speed data */}
-        <Suspense fallback={<Skeleton className="h-64 w-full" />}>
-          <RecentAppointments />
-        </Suspense>
-
-        {/* Slow data - doesn't block other sections */}
-        <Suspense fallback={<Skeleton className="h-64 w-full" />}>
-          <AnalyticsChart />
-        </Suspense>
-      </div>
-    </div>
-  )
-}
-
-// ❌ WRONG - No Suspense boundaries
-export default async function Dashboard() {
-  // ❌ Sequential awaits - creates waterfall
-  const stats = await getQuickStats()
-  const appointments = await getRecentAppointments()
-  const analytics = await getAnalytics() // Slow query blocks entire page
-
-  return (
-    <div>
-      <QuickStats data={stats} />
-      <RecentAppointments data={appointments} />
-      <AnalyticsChart data={analytics} />
-    </div>
-  )
-}
-```
-
----
-
-## Caching Strategies
-
-### Decision Tree: Which Revalidation API?
-
-```
-Need to invalidate cache?
-├─ In Server Action after user write → updateTag('resource')
-│   └─ Examples: create appointment, update profile, delete review
-│   └─ Provides read-your-writes consistency (immediate)
-│
-├─ In Server Action for client router refresh → refresh()
-│   └─ Examples: mark notification read, toggle favorite, update count
-│   └─ Refreshes client-side router cache without full reload
-│
-├─ In Server Action for background refresh → revalidateTag('resource', 'max')
-│   └─ Examples: increment view count, analytics updates
-│   └─ Stale-while-revalidate pattern (eventual consistency)
-│
-├─ In Route Handler (webhooks) → revalidateTag('resource', 'max')
-│   └─ Examples: Stripe webhook, CMS content update
-│   └─ Cannot use updateTag() or refresh() in Route Handlers
-│
-├─ Entire page after mutation → revalidatePath('/path', 'page')
-│   └─ Examples: redirect after delete, force full page refresh
-│
-└─ All routes (rare) → revalidatePath('/', 'layout')
-    └─ Examples: site-wide settings change, global maintenance
-```
-
-### Cache Profile Options (Next.js 15+)
-
-```ts
-// Built-in profiles
-'max'   // Maximum SWR tolerance - recommended for most cases
-'hours' // Revalidate after hours
-'days'  // Revalidate after days
-
-// Custom profile from next.config.ts
-'salons'    // If defined in config
-'analytics' // If defined in config
-
-// Inline object
-{ revalidate: 3600, stale: 300, expire: 7200 } // Advanced control
-```
-
-### New Cache APIs (Next.js 15.1+)
-
-| API | Availability | Use Case | Semantics |
-|-----|-------------|----------|-----------|
-| `updateTag(tag)` | Server Actions only | User writes data | Read-your-writes (immediate) |
-| `refresh()` | Server Actions only | Client router refresh | Refresh without reload |
-| `revalidateTag(tag, profile)` | Server Actions & Route Handlers | Background refresh | Stale-while-revalidate |
-| `revalidatePath(path, type)` | Server Actions & Route Handlers | Full route refresh | Entire page/layout |
-
-### Configure Custom Cache Profiles
-
-```ts
-// next.config.ts
-import type { NextConfig } from 'next'
-
-const nextConfig: NextConfig = {
-  cacheLife: {
-    default: {
-      stale: 300,      // 5 minutes
-      revalidate: 900, // 15 minutes
-      expire: 3600,    // 1 hour
-    },
-    salons: {
-      stale: 900,       // 15 minutes
-      revalidate: 3600, // 1 hour
-      expire: 86400,    // 24 hours
-    },
-    analytics: {
-      stale: 3600,      // 1 hour
-      revalidate: 7200, // 2 hours
-      expire: 86400,    // 24 hours
-    },
-  },
-}
-
-export default nextConfig
-```
-
-### Tag Naming Conventions
-
-```ts
-// ✅ GOOD - Descriptive, hierarchical tags
-'appointments'                    // All appointments
-`appointments:${businessId}`      // Business-specific appointments
-`appointment:${appointmentId}`    // Single appointment
-'salons'                          // All salons
-`salon:${salonId}`                // Single salon
-`salon:${salonId}:reviews`        // Salon reviews
-`staff:${staffId}:schedule`       // Staff schedule
-
-// ❌ BAD - Vague or overly generic tags
-'data'                            // Too generic
-'cache'                           // Not descriptive
-'stuff'                           // Meaningless
-'items'                           // No context
-```
-
----
-
-## Advanced Caching Strategies (Next.js 15+)
-
-### Multi-Layer Caching Architecture
-
-```
-CDN Layer (Vercel Edge)
-    ↓
-Full Route Cache (Build-time + ISR)
-    ↓
-Data Cache (fetch with tags)
-    ↓
-Router Cache (Client-side)
-    ↓
-Database/External API
-```
-
-### Pattern 12: "use cache" Directive (Next.js 15+)
-
-**When to use:** Incremental caching of functions or components without caching entire routes
-
-**Implementation:**
-```tsx
-// ✅ CORRECT - use cache for function-level caching
-// features/business/analytics/api/queries.ts
-'use cache'
-
-import { createClient } from '@/lib/supabase/server'
-import { cacheTag, cacheLife } from 'next/cache'
-
-export async function getRevenueAnalytics(businessId: string) {
-  cacheTag('analytics', `analytics:${businessId}`)
-  cacheLife('analytics') // Uses custom profile from next.config.ts
-
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('revenue_analytics')
-    .select('*')
-    .eq('business_id', businessId)
-
-  return data
-}
-
-// ✅ CORRECT - use cache for component-level caching
-'use cache'
-
-import { cacheTag } from 'next/cache'
-
-export async function AnalyticsWidget({ businessId }: { businessId: string }) {
-  cacheTag(`widget:${businessId}`)
-
-  const data = await getRevenueAnalytics(businessId)
-
-  return (
-    <div className="analytics-widget">
-      <h3>Revenue: ${data.revenue}</h3>
-    </div>
-  )
-}
-
-// ❌ WRONG - Missing cacheTag or cacheLife directives
-'use cache'
-
-export async function getAnalytics(businessId: string) {
-  // ❌ No cacheTag() - cannot invalidate granularly
-  const supabase = await createClient()
-  return supabase.from('analytics').select('*').eq('business_id', businessId)
-}
-```
-
-### Pattern 13: Hybrid Rendering Strategy
-
-**When to use:** Production applications requiring different rendering for different routes
-
-**Implementation:**
-```tsx
-// ✅ CORRECT - SSG for marketing pages
-// app/about/page.tsx
-export const dynamic = 'force-static'
-export const revalidate = 86400 // 24 hours
-
-export default async function AboutPage() {
-  return <AboutContent />
-}
-
-// ✅ CORRECT - ISR for semi-dynamic content
-// app/blog/[slug]/page.tsx
-export const revalidate = 3600 // 1 hour
-
-export default async function BlogPost({
-  params
-}: {
-  params: Promise<{ slug: string }>
-}) {
-  const { slug } = await params
-  const post = await getPost(slug)
-
-  return <PostContent post={post} />
-}
-
-// ✅ CORRECT - SSR for user-specific dashboards
-// app/(business)/dashboard/page.tsx
-export const dynamic = 'force-dynamic'
-
-export default async function Dashboard() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  return <DashboardContent userId={user?.id} />
-}
-
-// ✅ CORRECT - Edge runtime for auth middleware
-// middleware.ts
-export const config = {
-  runtime: 'edge', // Fast, globally distributed
-  matcher: ['/dashboard/:path*', '/api/:path*']
-}
-
-export function middleware(request: NextRequest) {
-  // Lightweight auth checks at edge
-  const token = request.cookies.get('auth-token')
-  if (!token) {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
-  return NextResponse.next()
-}
-
-// ✅ CORRECT - Node.js runtime for complex middleware (15.2+)
-// middleware.ts
-export const config = {
-  runtime: 'nodejs', // Full Node.js API access
-  matcher: ['/api/webhooks/:path*']
-}
-
-export async function middleware(request: NextRequest) {
-  // Complex database operations, TCP connections
-  const db = await connectToDatabase()
-  const result = await db.query('SELECT * FROM rate_limits WHERE ip = $1', [request.ip])
-
-  if (result.rows[0]?.exceeded) {
-    return new NextResponse('Rate limited', { status: 429 })
-  }
-
-  return NextResponse.next()
-}
-```
-
-### Pattern 14: Cache Stampede Prevention
-
-**When to use:** High-traffic routes where multiple requests might trigger expensive regeneration
-
-**Implementation:**
-```tsx
-// ✅ CORRECT - Stale-while-revalidate pattern
-// features/marketing/salons/api/queries.ts
-export async function getPopularSalons() {
-  const res = await fetch('https://api.example.com/salons/popular', {
-    next: {
-      tags: ['salons', 'popular'],
-      revalidate: 300, // Revalidate every 5 minutes
-    },
-  })
-
-  return res.json()
-}
-
-// Configure cache profile for SWR behavior
-// next.config.ts
-const nextConfig = {
-  cacheLife: {
-    salons: {
-      stale: 300,       // Serve stale for 5 minutes
-      revalidate: 600,  // Revalidate in background after 10 minutes
-      expire: 3600,     // Hard expiry after 1 hour
-    },
-  },
-}
-
-// ✅ CORRECT - Request deduplication with React cache
-// features/business/dashboard/api/queries.ts
-import { cache } from 'react'
-import { createClient } from '@/lib/supabase/server'
-
-// Deduplicate requests within same render
-export const getBusinessStats = cache(async (businessId: string) => {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('business_stats')
-    .select('*')
-    .eq('id', businessId)
-    .single()
-
-  return data
-})
-
-// Multiple components can call this - only executes once per render
-export async function StatCard({ businessId }: { businessId: string }) {
-  const stats = await getBusinessStats(businessId) // Deduped
-  return <div>{stats.total_revenue}</div>
-}
-
-export async function MetricsPanel({ businessId }: { businessId: string }) {
-  const stats = await getBusinessStats(businessId) // Uses cached result
-  return <div>{stats.appointments_count}</div>
-}
-```
-
-### Pattern 15: Tag Hierarchy and Invalidation Strategy
-
-**When to use:** Complex data dependencies requiring granular cache control
-
-**Implementation:**
-```tsx
-// ✅ CORRECT - Hierarchical tag naming
-const tags = {
-  // Top-level resource tags
-  appointments: 'appointments',
-  salons: 'salons',
-  staff: 'staff',
-
-  // Business-scoped tags
-  businessAppointments: (businessId: string) => `appointments:business:${businessId}`,
-  businessSalons: (businessId: string) => `salons:business:${businessId}`,
-
-  // Resource-specific tags
-  appointment: (id: string) => `appointment:${id}`,
-  salon: (id: string) => `salon:${id}`,
-  salonReviews: (salonId: string) => `salon:${salonId}:reviews`,
-  salonStaff: (salonId: string) => `salon:${salonId}:staff`,
-  staffSchedule: (staffId: string) => `staff:${staffId}:schedule`,
-}
-
-// ✅ CORRECT - Strategic invalidation
-'use server'
-
-export async function createAppointment(input: AppointmentInput) {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('appointments')
-    .insert(input)
-    .select()
-    .single()
-
-  // Invalidate from specific to general
-  updateTag(tags.appointment(data.id))                    // Single appointment
-  updateTag(tags.businessAppointments(data.business_id))  // Business appointments
-  updateTag(tags.staffSchedule(data.staff_id))            // Staff schedule
-  updateTag(tags.appointments)                            // All appointments (admin)
-
-  revalidatePath('/business/appointments', 'page')
-}
-
-export async function deleteAppointment(appointmentId: string) {
-  const supabase = await createClient()
-
-  // Fetch before delete to know what to invalidate
-  const { data: appointment } = await supabase
-    .from('appointments')
-    .select('business_id, staff_id, salon_id')
-    .eq('id', appointmentId)
-    .single()
-
-  await supabase.from('appointments').delete().eq('id', appointmentId)
-
-  // Invalidate hierarchically
-  updateTag(tags.appointment(appointmentId))
-  updateTag(tags.businessAppointments(appointment.business_id))
-  updateTag(tags.staffSchedule(appointment.staff_id))
-  updateTag(tags.salonStaff(appointment.salon_id))
-
-  revalidatePath('/business/appointments', 'page')
-}
-
-// ❌ WRONG - Flat, non-hierarchical tags
-const badTags = {
-  appointments1: 'appts',              // Abbreviation unclear
-  appointments2: 'appointment-data',   // No hierarchy
-  appointments3: 'business-appointments', // Not parameterized
-}
-```
-
----
-
-## Performance Optimization
-
-### Pattern 16: Streaming with Nested Suspense Boundaries
-
-**When to use:** Complex pages with multiple data dependencies
-
-**Implementation:**
-```tsx
-// ✅ CORRECT - Granular streaming with priority
-// app/(business)/dashboard/page.tsx
-import { Suspense } from 'react'
-
-export default function Dashboard() {
-  return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Dashboard</h1>
-
-      {/* Critical data - small boundary, fast */}
-      <Suspense fallback={<QuickStatsSkeleton />}>
-        <QuickStats />
-      </Suspense>
-
-      <div className="grid grid-cols-2 gap-6">
-        {/* Medium priority - independent streams */}
-        <Suspense fallback={<AppointmentsSkeleton />}>
-          <RecentAppointments />
-        </Suspense>
-
-        <Suspense fallback={<RevenueSkeleton />}>
-          <RevenueChart />
-        </Suspense>
-      </div>
-
-      {/* Low priority - slow analytics */}
-      <Suspense fallback={<AnalyticsSkeleton />}>
-        <DetailedAnalytics />
-      </Suspense>
-    </div>
-  )
-}
-
-// ✅ CORRECT - Nested Suspense for complex component
-async function DetailedAnalytics() {
-  const basicStats = await getBasicAnalytics() // Fast query
-
-  return (
-    <div className="analytics-container">
-      <h2>Analytics Overview</h2>
-      <BasicStatsDisplay data={basicStats} />
-
-      {/* Nested Suspense for slow sub-component */}
-      <Suspense fallback={<ChartSkeleton />}>
-        <ComplexChart /> {/* Slow aggregation query */}
-      </Suspense>
-    </div>
-  )
-}
-
-// ❌ WRONG - Single Suspense boundary blocks everything
-export default function Dashboard() {
-  return (
-    <Suspense fallback={<FullPageSkeleton />}>
-      <DashboardContent /> {/* All data fetched sequentially */}
-    </Suspense>
-  )
-}
-```
-
-### Pattern 17: Parallel Data Fetching (Avoiding Waterfalls)
-
-**When to use:** Multiple independent data sources needed for single page
-
-**Implementation:**
-```tsx
-// ✅ CORRECT - Parallel Promise.all
-// app/(business)/salons/[salonId]/page.tsx
-async function SalonDetail({ salonId }: { salonId: string }) {
-  const supabase = await createClient()
-
-  // ✅ All queries execute in parallel
-  const [salon, staff, reviews, services] = await Promise.all([
-    supabase.from('salons').select('*').eq('id', salonId).single(),
-    supabase.from('staff').select('*').eq('salon_id', salonId),
-    supabase.from('reviews').select('*').eq('salon_id', salonId).limit(10),
-    supabase.from('services').select('*').eq('salon_id', salonId),
-  ])
-
-  return (
-    <div>
-      <SalonHeader salon={salon.data} />
-      <StaffList staff={staff.data} />
-      <ReviewsSection reviews={reviews.data} />
-      <ServicesGrid services={services.data} />
-    </div>
-  )
-}
-
-// ❌ WRONG - Sequential waterfall
-async function SalonDetail({ salonId }: { salonId: string }) {
-  const supabase = await createClient()
-
-  // ❌ Each await blocks next query
-  const salon = await supabase.from('salons').select('*').eq('id', salonId).single()
-  const staff = await supabase.from('staff').select('*').eq('salon_id', salonId)
-  const reviews = await supabase.from('reviews').select('*').eq('salon_id', salonId)
-
-  return <SalonContent salon={salon} staff={staff} reviews={reviews} />
-}
-
-// ✅ CORRECT - Component-level parallelism with Suspense
-export default function SalonPage({ params }: { params: Promise<{ salonId: string }> }) {
-  return (
-    <div>
-      {/* All components fetch in parallel */}
-      <Suspense fallback={<HeaderSkeleton />}>
-        <SalonHeader params={params} />
-      </Suspense>
-
-      <div className="grid grid-cols-2 gap-6">
-        <Suspense fallback={<StaffSkeleton />}>
-          <StaffList params={params} />
-        </Suspense>
-
-        <Suspense fallback={<ReviewsSkeleton />}>
-          <ReviewsSection params={params} />
-        </Suspense>
-      </div>
-    </div>
-  )
-}
-```
-
-### Partial Prerendering (Experimental - NOT Production Ready)
-
-**Status:** Experimental in Next.js 15.5, NOT recommended for production
-
-```tsx
-// ⚠️ EXPERIMENTAL - Enable in next.config.ts
-const nextConfig = {
-  experimental: {
-    ppr: 'incremental', // Opt-in per route
-  },
-}
-
-// ⚠️ EXPERIMENTAL - Opt-in at route level
-// app/products/page.tsx
-export const experimental_ppr = true
-
-export default function ProductsPage() {
-  return (
-    <div>
-      {/* Static shell prerendered */}
-      <Header />
-      <Nav />
-
-      {/* Dynamic content streamed */}
-      <Suspense fallback={<ProductsSkeleton />}>
-        <Products /> {/* Fetches at runtime */}
-      </Suspense>
-
-      {/* Static footer prerendered */}
-      <Footer />
-    </div>
-  )
-}
-
-// ⚠️ DO NOT USE IN PRODUCTION - Wait for stable release
-```
-
----
-
-## Security Hardening
-
-### Pattern 18: Content Security Policy (CSP) with Nonces
-
-**When to use:** Production applications requiring XSS protection
-
-**Implementation:**
-```tsx
-// ✅ CORRECT - CSP middleware with nonces
-// middleware.ts
-import { NextRequest, NextResponse } from 'next/server'
-import { randomBytes } from 'crypto'
-
-export function middleware(request: NextRequest) {
-  // Generate unique nonce for this request
-  const nonce = randomBytes(16).toString('base64')
-
-  const cspHeader = [
-    "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
-    `style-src 'self' 'nonce-${nonce}'`,
-    "img-src 'self' blob: data: https:",
-    "font-src 'self'",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "frame-ancestors 'none'",
-    "upgrade-insecure-requests",
-  ].join('; ')
-
-  const response = NextResponse.next()
-
-  response.headers.set('Content-Security-Policy', cspHeader)
-  response.headers.set('X-Content-Type-Options', 'nosniff')
-  response.headers.set('X-Frame-Options', 'DENY')
-  response.headers.set('X-XSS-Protection', '1; mode=block')
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-  response.headers.set(
-    'Strict-Transport-Security',
-    'max-age=31536000; includeSubDomains'
-  )
-
-  // Pass nonce to page via header
-  response.headers.set('x-nonce', nonce)
-
-  return response
-}
-
-export const config = {
-  matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
-  ],
-}
-
-// ✅ CORRECT - Use nonce in layout
-// app/layout.tsx
-import { headers } from 'next/headers'
-
-export default async function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const headersList = await headers()
-  const nonce = headersList.get('x-nonce') ?? undefined
-
-  return (
-    <html lang="en">
-      <head>
-        <script nonce={nonce} src="/analytics.js" />
-      </head>
-      <body>{children}</body>
-    </html>
-  )
-}
-```
-
-### Pattern 19: Rate Limiting with Upstash Redis
-
-**When to use:** API routes and Server Actions requiring abuse prevention
-
-**Implementation:**
-```tsx
-// ✅ CORRECT - Rate limiting middleware
-// lib/rate-limit.ts
-import { Redis } from '@upstash/redis'
-import { Ratelimit } from '@upstash/ratelimit'
-
-const redis = Redis.fromEnv()
-
-export const ratelimit = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(10, '10 s'), // 10 requests per 10 seconds
-  analytics: true,
-})
-
-// ✅ CORRECT - Apply to Route Handler
-// app/api/bookings/route.ts
-import { ratelimit } from '@/lib/rate-limit'
-
-export async function POST(request: NextRequest) {
-  const ip = request.ip ?? '127.0.0.1'
-  const { success, limit, reset, remaining } = await ratelimit.limit(ip)
-
-  if (!success) {
-    return NextResponse.json(
-      { error: 'Too many requests' },
-      {
-        status: 429,
-        headers: {
-          'X-RateLimit-Limit': limit.toString(),
-          'X-RateLimit-Remaining': remaining.toString(),
-          'X-RateLimit-Reset': reset.toString(),
-        },
-      }
-    )
-  }
-
-  // Process booking
-  return NextResponse.json({ success: true })
-}
-
-// ✅ CORRECT - Apply to Server Action
-'use server'
-
-import { ratelimit } from '@/lib/rate-limit'
-
-export async function createReview(input: ReviewInput) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) throw new Error('Unauthorized')
-
-  // Rate limit by user ID
-  const { success } = await ratelimit.limit(user.id)
-
-  if (!success) {
-    throw new Error('Too many requests. Please try again later.')
-  }
-
-  // Create review
-  const { data } = await supabase.from('reviews').insert(input).select().single()
-
-  updateTag(`salon:${input.salon_id}:reviews`)
-  updateTag(`reviews`)
-
-  return data
-}
-```
-
----
-
-## Monitoring and Observability
-
-### Pattern 20: OpenTelemetry Instrumentation
-
-**When to use:** Production applications requiring distributed tracing
-
-**Implementation:**
-```tsx
-// ✅ CORRECT - Enable OpenTelemetry
-// instrumentation.ts (root of project)
-export async function register() {
-  if (process.env.NEXT_RUNTIME === 'nodejs') {
-    const { registerOTel } = await import('@vercel/otel')
-
-    registerOTel({
-      serviceName: 'enorae-app',
-      tracesSampleRate: 1.0, // 100% in development, 0.1 in production
-    })
-  }
-}
-
-// ✅ CORRECT - Custom spans for performance tracking
-// features/business/appointments/api/mutations.ts
-'use server'
-
-import { trace } from '@opentelemetry/api'
-
-const tracer = trace.getTracer('appointments-service')
-
-export async function createAppointment(input: AppointmentInput) {
-  return tracer.startActiveSpan('create-appointment', async (span) => {
-    try {
-      span.setAttribute('appointment.salon_id', input.salon_id)
-      span.setAttribute('appointment.service_id', input.service_id)
-
-      const supabase = await createClient()
-
-      // Child span for database operation
-      const dbSpan = tracer.startSpan('db.insert.appointment')
-      const { data, error } = await supabase
-        .from('appointments')
-        .insert(input)
-        .select()
-        .single()
-      dbSpan.end()
-
-      if (error) {
-        span.recordException(error)
-        span.setStatus({ code: 2, message: error.message })
-        throw error
-      }
-
-      // Child span for cache invalidation
-      const cacheSpan = tracer.startSpan('cache.invalidate')
-      updateTag(`appointment:${data.id}`)
-      updateTag('appointments')
-      cacheSpan.end()
-
-      span.setStatus({ code: 1 })
-      return data
-    } finally {
-      span.end()
-    }
-  })
-}
-
-// ✅ CORRECT - Environment variables
-// .env.local
-NEXT_OTEL_VERBOSE=1                    # Verbose logging
-OTEL_EXPORTER_OTLP_ENDPOINT=https://...# Your observability backend
-OTEL_SERVICE_NAME=enorae-app
-```
-
-### Pattern 21: Error Tracking and Logging
-
-**When to use:** Production applications requiring error monitoring
-
-**Implementation:**
-```tsx
-// ✅ CORRECT - Global error boundary
-// app/error.tsx
-'use client'
-
-import { useEffect } from 'react'
-import * as Sentry from '@sentry/nextjs'
-
-export default function Error({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string }
-  reset: () => void
-}) {
-  useEffect(() => {
-    // Log to Sentry
-    Sentry.captureException(error)
-  }, [error])
-
-  return (
-    <div className="error-container">
-      <h2>Something went wrong!</h2>
-      <button onClick={() => reset()}>Try again</button>
-    </div>
-  )
-}
-
-// ✅ CORRECT - Server-side error logging
-// features/business/appointments/api/mutations.ts
-'use server'
-
-import { logger } from '@/lib/logger'
-
-export async function createAppointment(input: AppointmentInput) {
-  try {
-    logger.info('Creating appointment', { input })
-
-    const supabase = await createClient()
-    const { data, error } = await supabase
-      .from('appointments')
-      .insert(input)
-      .select()
-      .single()
-
-    if (error) {
-      logger.error('Failed to create appointment', { error, input })
-      throw error
-    }
-
-    logger.info('Appointment created', { appointmentId: data.id })
-    return data
-  } catch (error) {
-    logger.error('Unexpected error creating appointment', { error })
-    throw error
-  }
-}
-
-// ✅ CORRECT - Structured logging
-// lib/logger.ts
-import pino from 'pino'
-
-export const logger = pino({
-  level: process.env.LOG_LEVEL || 'info',
-  transport: {
-    target: 'pino-pretty',
-    options: {
-      colorize: true,
-    },
-  },
-})
-```
-
----
-
-## Deployment and Production Patterns
-
-### Rendering Strategy Decision Matrix
-
-| Content Type | Rendering | Revalidation | Use Case |
-|--------------|-----------|--------------|----------|
-| Marketing pages | SSG | None or daily | About, Pricing, Terms |
-| Blog posts | ISR | 1 hour | Article content |
-| Product listings | ISR | 5 minutes | E-commerce catalog |
-| User dashboard | SSR | N/A | Personalized data |
-| Search results | SSR | N/A | Real-time queries |
-| Static assets | SSG | None | Images, fonts, docs |
-
-### Pattern 22: Edge vs Node.js Runtime Decision
-
-**Edge Runtime (Fast, globally distributed):**
-```tsx
-// ✅ CORRECT - Edge for simple auth checks
-// middleware.ts
-export const config = {
-  runtime: 'edge',
-  matcher: ['/dashboard/:path*']
-}
-
-export function middleware(request: NextRequest) {
-  const token = request.cookies.get('auth-token')
-
-  if (!token) {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
-
-  return NextResponse.next()
-}
-
-// ✅ CORRECT - Edge for geolocation routing
-export function middleware(request: NextRequest) {
-  const country = request.geo?.country || 'US'
-
-  if (country === 'CN') {
-    return NextResponse.rewrite(new URL('/cn', request.url))
-  }
-
-  return NextResponse.next()
-}
-```
-
-**Node.js Runtime (Full ecosystem access):**
-```tsx
-// ✅ CORRECT - Node.js for database operations (15.2+)
-// middleware.ts
-export const config = {
-  runtime: 'nodejs',
-  matcher: ['/api/:path*']
-}
-
-import { createClient } from '@/lib/supabase/server'
-
-export async function middleware(request: NextRequest) {
-  // Complex database query with TCP connection
-  const supabase = await createClient()
-
-  const { data } = await supabase
-    .from('rate_limits')
-    .select('*')
-    .eq('ip_address', request.ip)
-    .single()
-
-  if (data?.is_blocked) {
-    return new NextResponse('Blocked', { status: 403 })
-  }
-
-  return NextResponse.next()
-}
-
-// ✅ CORRECT - Node.js for file system operations
-export async function middleware(request: NextRequest) {
-  const fs = await import('fs/promises')
-  const config = await fs.readFile('./config.json', 'utf-8')
-
-  // Process based on config
-  return NextResponse.next()
-}
-```
-
----
-
-## File Conventions
-
-### App Router File Structure
-
-| File | Purpose | Required | Notes |
-|------|---------|----------|-------|
-| `layout.tsx` | Persistent shell for segment | Yes (root) | Can be async; receives params as Promise |
-| `page.tsx` | Route entry point | Yes | Can be async; receives params/searchParams as Promises |
-| `loading.tsx` | Suspense fallback | No | Server Component; render skeletons |
-| `error.tsx` | Error boundary UI | No | Must be `'use client'`; receives error and reset |
-| `not-found.tsx` | 404 for segment | No | Server Component; triggered by notFound() |
-| `default.tsx` | Parallel route fallback | Yes (parallel) | REQUIRED for parallel routes in Next.js 16 |
-| `route.ts` | API/Route handler | No | Export HTTP methods (GET, POST, etc.) |
-| `template.tsx` | Re-render on navigation | No | Useful for animations; not cached |
-
-### Route Segment Config Options
-
-```tsx
-// app/dashboard/page.tsx
-
-// Force dynamic rendering (never cache)
-export const dynamic = 'force-dynamic'
-
-// Force static generation (always cache)
-export const dynamic = 'force-static'
-
-// Revalidate entire route every N seconds
-export const revalidate = 3600 // 1 hour
-
-// Control fetch cache behavior
-export const fetchCache = 'default-cache'
-
-// Runtime: 'nodejs' | 'edge'
-export const runtime = 'nodejs'
-```
-
----
-
-## Detection Commands
-
-```bash
-# Find page/layout files accessing params without awaiting
-rg "params\." app features --type tsx -B 2 | grep -v "await params"
-
-# Find searchParams access without await
-rg "searchParams\." app features --type tsx -B 2 | grep -v "await searchParams"
-
-# Find cookies() without await
-rg "cookies\(\)" --type ts --type tsx -B 1 | grep -v "await"
-
-# Find headers() without await
-rg "headers\(\)" --type ts --type tsx -B 1 | grep -v "await"
-
-# Find createClient() without await
-rg "createClient\(\)" --type ts --type tsx -B 2 | grep -v "await createClient"
-
-# Find revalidateTag without cache profile
-rg "revalidateTag\(['\"][^'\"]+['\"]\)(?!\s*,)" --type ts --type tsx
-
-# Find revalidatePath without type parameter
-rg "revalidatePath\(['\"][^'\"]+['\"]\)(?!\s*,)" --type ts --type tsx
-
-# Find parallel routes missing default.tsx
-find app -type d -name "@*" -exec sh -c '[ ! -f "$1/default.tsx" ] && echo "Missing: $1/default.tsx"' _ {} \;
-
-# Ensure Server Actions declare 'use server'
-rg --files -g 'mutations.ts' -g 'actions.ts' | xargs -I{} sh -c "grep -L \"'use server'\" {}"
-
-# Identify client components missing 'use client' while using hooks
-rg "(useState|useEffect|useActionState|useOptimistic)" app features --type tsx \
-  | xargs -I{} sh -c "grep -L \"'use client'\" {}"
-
-# Catch legacy Pages Router functions
-rg "getServerSideProps|getStaticProps|getInitialProps" --type ts --type tsx
-
-# Find generic cache tag names
-rg "revalidateTag\(['\"](data|cache|stuff|items)['\"]" --type ts --type tsx
-
-# Find async Client Components (invalid)
-rg "'use client'" app features --type tsx -A 3 | grep "export default async function"
-
-# Find updateTag() used outside Server Actions
-rg "updateTag\(" --type ts --type tsx | xargs -I{} sh -c "grep -L \"'use server'\" {}"
-
-# Find refresh() used outside Server Actions
-rg "refresh\(\)" --type ts --type tsx | xargs -I{} sh -c "grep -L \"'use server'\" {}"
-
-# Find fetch requests without explicit cache option (Next.js 15+)
-rg "fetch\(['\"]https?://" --type ts --type tsx -A 2 | grep -v "cache:"
-
-# Find unstable_cacheLife imports (should be cacheLife)
-rg "unstable_cacheLife" --type ts --type tsx
-
-# Find Route Handlers assuming cached GET (Next.js 15+)
-rg "export async function GET" app --type ts -B 2 | grep -v "dynamic = 'force-static'"
-
-# Find 'use cache' without cacheTag() or cacheLife()
-rg "'use cache'" --type ts --type tsx -A 10 | grep -L "cacheTag\|cacheLife"
-
-# Find sequential data fetching (waterfall pattern)
-rg "const .+ = await" app features --type tsx -A 1 -B 1 | grep -A 1 "const .+ = await" | grep -v "Promise.all"
-
-# Find missing CSP headers in middleware
-rg "export.*function middleware" --type ts -A 20 | grep -L "Content-Security-Policy"
-
-# Find public API routes without rate limiting
-rg "export async function POST" app/api --type ts -A 10 | grep -L "ratelimit"
-
-# Find production apps without OpenTelemetry
-test ! -f instrumentation.ts && echo "Missing: instrumentation.ts for OpenTelemetry"
-
-# Find PPR enabled in production (experimental)
-rg "experimental_ppr.*true" --type ts --type tsx
-
-# Find Edge runtime used for database operations
-rg "runtime.*edge" middleware.ts -A 10 | grep "createClient\|supabase"
-
-# Find single Suspense wrapping entire page
-rg "<Suspense" app --type tsx | awk '{print $1}' | sort | uniq -c | awk '$1 == 1'
-
-# Find components not using Promise.all for parallel queries
-rg "await supabase" app features --type tsx -A 1 | grep -A 1 "await supabase" | grep -v "Promise.all"
-
-# Find middleware without proper security headers
-rg "export.*middleware" --type ts -A 30 | grep -L "X-Content-Type-Options\|X-Frame-Options"
-
-# Find Server Actions without error logging
-rg "'use server'" --type ts -A 30 | grep -L "try.*catch\|logger"
-
-# Find uncached fetch requests that should be cached
-rg "fetch.*next.*tags" --type ts -A 2 | grep -v "cache: 'force-cache'"
-```
-
----
-
-## Quick Reference
-
-| Pattern | When | Example | Since |
-|---------|------|---------|-------|
-| Async page | Always with params/searchParams | `const { id } = await params` | 15.0 |
-| updateTag | Server Action writes (immediate) | `updateTag('appointments')` | 15.1 |
-| refresh | Client router refresh | `refresh()` | 15.1 |
-| revalidateTag | Background refresh | `revalidateTag('appointments', 'max')` | 15.0 |
-| revalidatePath | After delete/major change | `revalidatePath('/dashboard', 'page')` | 15.0 |
-| use cache | Function/component caching | `'use cache'` + `cacheTag('resource')` | 15.0 |
-| Fetch cache | Explicit caching required | `fetch(url, { cache: 'force-cache' })` | 15.0 |
-| Fetch tags | With cache invalidation | `fetch(url, { next: { tags: ['users'] } })` | 13.0 |
-| No cache | Always fresh | `fetch(url, { cache: 'no-store' })` | 13.0 |
-| Suspense | Slow data sections | `<Suspense fallback={<Skeleton />}>` | 13.0 |
-| Parallel data | Avoid waterfalls | `Promise.all([query1, query2])` | All |
-| Parallel route | Modals/conditional UI | `@modal/default.tsx` required | 15.0 |
-| Route Handler | Webhooks/non-form API | `export async function POST(request)` | 13.0 |
-| Client params | React hooks needed | `const { id } = use(params)` | 15.0 |
-| CSP Headers | Production security | Middleware with nonces | All |
-| Rate Limiting | API abuse prevention | Upstash Redis + middleware | All |
-| OpenTelemetry | Production observability | `instrumentation.ts` + `@vercel/otel` | 13.0 |
-| Edge Runtime | Fast auth/routing | `runtime: 'edge'` in config | All |
-| Node.js Runtime | DB/file operations | `runtime: 'nodejs'` in config | 15.2 |
-| SSG | Static marketing pages | `dynamic = 'force-static'` | All |
-| ISR | Semi-dynamic content | `revalidate = 3600` | All |
-| SSR | User-specific data | `dynamic = 'force-dynamic'` | All |
-
----
-
-## Migration Checklist (Next.js 14 → 15/15.5)
-
-**Breaking Changes:**
-- [ ] All page/layout functions with params are async and await params
-- [ ] All searchParams access uses await
-- [ ] All cookies() calls are awaited
-- [ ] All headers() calls are awaited
-- [ ] All draftMode() calls are awaited
-- [ ] All createClient() calls are awaited (Supabase)
-- [ ] All revalidateTag() calls include cache profile (second parameter)
-- [ ] All revalidatePath() calls include type parameter ('page' | 'layout')
-- [ ] All parallel route slots have default.tsx files
-- [ ] All fetch requests explicitly set cache option (`cache: 'force-cache'` or `cache: 'no-store'`)
-- [ ] Route Handler GET methods set `dynamic = 'force-static'` if caching needed
-- [ ] No getServerSideProps/getStaticProps in codebase
-- [ ] No serverRuntimeConfig/publicRuntimeConfig usage
-- [ ] Cache tags are hierarchical and descriptive
-
-**New Features to Adopt (Next.js 15.1+):**
-- [ ] Server Actions use updateTag() for immediate writes (read-your-writes)
-- [ ] Server Actions use refresh() for client router updates
-- [ ] Server Actions use revalidateTag() for background updates (stale-while-revalidate)
-- [ ] Import cacheLife (not unstable_cacheLife) for cache profiles
-- [ ] Consider enabling Turbopack file system caching (`experimental.turbopackFileSystemCacheForDev`)
-
-**Advanced Caching (Next.js 15+):**
-- [ ] Implement 'use cache' directive with cacheTag() for granular invalidation
-- [ ] Use React cache() for request deduplication within same render
-- [ ] Configure custom cacheLife profiles in next.config.ts
-- [ ] Implement hierarchical cache tag naming convention
-- [ ] Use Promise.all() for parallel data fetching (avoid waterfalls)
-
-**Performance Optimization:**
-- [ ] Add granular Suspense boundaries (not single page-level boundary)
-- [ ] Implement nested Suspense for complex components
-- [ ] Use component-level parallelism with Suspense
-- [ ] Avoid sequential data fetching patterns
-- [ ] Consider PPR for future (still experimental, NOT production-ready)
-
-**Security Hardening (Production Apps):**
-- [ ] Implement Content Security Policy (CSP) with nonces in middleware
-- [ ] Add comprehensive security headers (X-Frame-Options, HSTS, etc.)
-- [ ] Implement rate limiting for public API routes (Upstash Redis)
-- [ ] Rate limit Server Actions by user ID
-- [ ] Validate CSP policy with Google CSP Evaluator
-
-**Monitoring and Observability (Production Apps):**
-- [ ] Add OpenTelemetry instrumentation (`instrumentation.ts`)
-- [ ] Use @vercel/otel for simplified setup
-- [ ] Implement custom spans for critical operations
-- [ ] Add structured logging with pino or similar
-- [ ] Set up error tracking (Sentry or similar)
-- [ ] Configure NEXT_OTEL_VERBOSE for debugging
-
-**Runtime Optimization (Next.js 15.2+):**
-- [ ] Use Edge runtime for simple auth checks and routing
-- [ ] Use Node.js runtime for database operations and file system access
-- [ ] Choose appropriate runtime for middleware operations
-- [ ] Avoid Edge runtime for heavy computational tasks
-
-**Deployment Strategy:**
-- [ ] Use SSG for marketing pages with daily/no revalidation
-- [ ] Use ISR for semi-dynamic content (blog posts, product listings)
-- [ ] Use SSR for user-specific dashboards and real-time data
-- [ ] Implement hybrid rendering strategy across application
-- [ ] Configure appropriate revalidate times per route
-
-**Next.js 16 Preparation (Coming Soon):**
-- [ ] Rename middleware.ts to proxy.ts (when upgrading to Next.js 16)
-- [ ] Update skipMiddlewareUrlNormalize to skipProxyUrlNormalize
-- [ ] Review parallel routes for default.tsx requirement
-
----
-
-**Related:**
-- [03-react.md](./03-react.md) - Server vs Client Components
-- [05-database.md](./05-database.md) - Supabase patterns with Next.js
-- [06-api.md](./06-api.md) - Server Actions vs Route Handlers
-- [07-forms.md](./07-forms.md) - Form handling with Server Actions
+### Key Points
+- Always `await params` before passing to queries
+- Use `cache()` to deduplicate shared data fetches
+- Set `next: { tags: ['metadata:post:${id}'] }` on metadata-critical fetches
+- Invalidate metadata via `revalidateTag('metadata:post:${id}', 'max')` when post updates
+
+## CROSS-REFERENCES
+
+This rule file coordinates with:
+
+| File | Focus | Key Coordination |
+|------|-------|-----------------|
+| **01-architecture.md** | File structure, routing fundamentals | Caching API fundamentals, proxy migration, runtime selection |
+| **03-react.md** | React 19, Server/Client Components | Suspense streaming, cache() deduplication, use() patterns |
+| **05-supabase.md** | Database queries, RLS, connection pooling | Fetch tags for DB queries, cache invalidation strategies |
+| **06-api.md** | Server Actions, Route Handlers | updateTag/revalidateTag, revalidatePath in actions, rate limiting |
+| **09-auth.md** | Authentication, session management | Auth state caching, cookie handling in Server Actions |
+
+**When implementing Next.js features, cross-reference these files in order:**
+1. Check 01-architecture.md for routing structure decisions
+2. Check 03-react.md for component composition patterns
+3. Check 06-api.md for Server Action caching strategies
+4. Check 05-supabase.md for database query patterns
+5. Check this file (04-nextjs.md) for caching and performance orchestration
+6. Check 09-auth.md for authentication state management
+
+**Recommended supporting rule files (under development):**
+- `11-performance.md` - Caching metrics, Core Web Vitals monitoring, performance budgets
+- `12-security.md` - CSP headers, CORS, security headers integration with Next.js
+- `14-logging.md` - Request logging, structured logging, OpenTelemetry setup
+- `15-database-patterns.md` - Connection pooling, query optimization, monitoring

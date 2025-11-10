@@ -1,484 +1,199 @@
-# Rules Documentation (NEW)
+# Code Rules & Patterns Guide
 
-**Last Updated:** 2025-11-03
-**Status:** Production-Ready
-**Source:** Context7 MCP + Existing Rules Migration
+This directory contains comprehensive rules for maintaining code quality, performance, and security across the Next.js application. Each file focuses on a specific domain.
 
----
+## 📚 Rule Files Overview
 
-## Quick Start
+### Core Architecture & Framework Rules
 
-**Read in this order:**
+| # | File | Focus | Checklist Items | Last Updated |
+|---|------|-------|-----------------|--------------|
+| 1 | **01-architecture.md** | File structure, routing, bundling, runtime selection | 100+ | Nov 10, 2025 |
+| 2 | **02-typescript.md** | Type safety, performance patterns, generics | 100+ | Nov 10, 2025 |
+| 3 | **03-react.md** | React 19, Server/Client Components, hooks, Suspense | 100+ | Nov 10, 2025 |
+| 4 | **04-nextjs.md** | Caching strategies, revalidation, ISR, image optimization, metadata API | 200+ | Nov 10, 2025 |
+
+### Backend & Data Rules
+
+| # | File | Focus | Checklist Items | Last Updated |
+|---|------|-------|-----------------|--------------|
+| 5 | **05-supabase.md** | RLS, queries, connection pooling, realtime, monitoring | 100+ | Nov 10, 2025 |
+| 6 | **06-api.md** | Server Actions, Route Handlers, validation, rate limiting, error handling | 100+ | Nov 10, 2025 |
+
+### UI & Forms Rules
+
+| # | File | Focus | Checklist Items | Last Updated |
+|---|------|-------|-----------------|--------------|
+| 7 | **07-forms.md** | Zod validation, accessibility, UX patterns | 100+ | Nov 10, 2025 |
+| 8 | **08-ui.md** | shadcn/ui, accessibility, Tailwind, component patterns | 100+ | Nov 10, 2025 |
+
+### Security & Auth Rules
+
+| # | File | Focus | Checklist Items | Last Updated |
+|---|------|-------|-----------------|--------------|
+| 9 | **09-auth.md** | Supabase Auth, session management, security patterns | 100+ | Nov 10, 2025 |
+
+### Recommended Supporting Rules (Under Development)
+
+| # | File | Focus | Status |
+|---|------|-------|--------|
+| 11 | **11-performance.md** | Caching metrics, Core Web Vitals, performance budgets | 🔄 Planned |
+| 12 | **12-security.md** | CSP headers, CORS, rate limiting, security headers | 🔄 Planned |
+| 14 | **14-logging.md** | Request logging, structured logging, OpenTelemetry | 🔄 Planned |
+| 15 | **15-database-patterns.md** | Connection pooling, query optimization, DB monitoring | 🔄 Planned |
+
+## 🔄 Cross-Reference Map
 
 ```
-01-architecture.md  → File structure, naming, limits
-02-typescript.md    → Type safety, strict mode, generics
-03-react.md         → Server/Client Components, React 19 hooks
-04-nextjs.md        → App Router, caching, async params
-05-database.md      → Supabase schema, RLS, migrations
-06-api.md           → Server Actions, Route Handlers, Zod validation
-07-forms.md         → Zod-only validation, useActionState
-08-ui.md            → shadcn/ui composition, Tailwind patterns
-09-auth.md          → Supabase Auth, getUser vs getSession
+┌─────────────────────────────────────────────────────────┐
+│         Application Architecture Decision Tree          │
+└─────────────────────────────────────────────────────────┘
+                          ↓
+         Start: Check 01-architecture.md
+              (Routing, file structure, bundling)
+                          ↓
+    ┌─────────────┬──────────────┬──────────────┐
+    ↓             ↓              ↓              ↓
+Page/Layout   Component      Server Action   Route Handler
+    ↓             ↓              ↓              ↓
+ Check 02      Check 03       Check 06       Check 06
+ + 03          + 08           + 05           (HTTP verbs)
+ + 04          + 07           + 09
+               (TypeScript)   (Validation)   (External APIs)
+               (React)        (Caching)      (Rate limiting)
+               (Forms/UI)
+                    ↓
+         Implement with 04-nextjs.md
+              (Caching orchestration)
+                    ↓
+         Validate against 02-typescript.md
+              (Type safety)
 ```
 
-**For new features:** Read 01 → 03 → 04 → 06 → 07
-**For database work:** Read 05 → 06 → 09
-**For UI work:** Read 08 → 03
+## 🎯 Implementation Workflow
 
----
+### When adding a new feature:
 
-## Stack Versions (from Context7)
+1. **Check 01-architecture.md** → Decide on file structure and routing pattern
+2. **Check 03-react.md** → Determine component strategy (Server vs Client)
+3. **Check 06-api.md** → Design mutation/query approach (Server Action vs Route Handler)
+4. **Check 04-nextjs.md** → Plan caching and revalidation strategy
+5. **Check 05-supabase.md** → Design database queries with RLS
+6. **Check 07-forms.md** → Implement form validation
+7. **Check 08-ui.md** → Use appropriate shadcn/ui components
+8. **Check 02-typescript.md** → Ensure type safety throughout
+9. **Check 09-auth.md** → Add authentication guards if needed
 
-| Technology | Version | Source |
-|------------|---------|--------|
-| **Next.js** | 15/16 (App Router) | `/vercel/next.js` |
-| **React** | 19 | `/facebook/react` |
-| **TypeScript** | 5.9.2 | `/microsoft/typescript` |
-| **Supabase JS** | 2.47.15 | `/supabase/supabase` |
-| **@supabase/ssr** | 0.6.1 | `/supabase/supabase` |
-| **Tailwind CSS** | 4.0 | `/tailwindlabs/tailwindcss.com` |
-| **shadcn/ui** | 0.9.0 | `/shadcn-ui/ui` |
-| **Zod** | 3.24.2 | `/colinhacks/zod` |
+### When investigating a problem:
 
----
+1. Start with the rule file matching the problem domain (e.g., "caching issue" → 04-nextjs.md)
+2. Check the FORBIDDEN PATTERNS section for anti-patterns
+3. Run detection commands to identify violations
+4. Reference CROSS-REFERENCES for related domains
+5. Check supporting rules (when available) for deeper context
 
-## Exclusive Stack (FORBIDDEN Alternatives)
+## 🔍 Quick Reference by Topic
 
-### Database
-- ✅ **Supabase ONLY**
-- ❌ Prisma, Drizzle, MongoDB, Firebase
+### Caching & Performance
+- **Primary:** 04-nextjs.md (revalidateTag, updateTag, revalidatePath, ISR, cacheLife)
+- **Supporting:** 01-architecture.md, 03-react.md, 06-api.md, 05-supabase.md
+- **Monitoring:** 11-performance.md (planned)
 
-### Auth
-- ✅ **Supabase Auth ONLY**
-- ❌ Auth0, Clerk, NextAuth, Lucia
+### Server Actions & API Routes
+- **Primary:** 06-api.md (validation, error handling, rate limiting)
+- **Supporting:** 04-nextjs.md (caching in actions), 05-supabase.md (DB calls), 09-auth.md (auth guards)
+- **Logging:** 14-logging.md (planned)
 
-### UI
-- ✅ **shadcn/ui ONLY**
-- ❌ Material-UI, Chakra UI, Ant Design, Headless UI
+### Database Queries & RLS
+- **Primary:** 05-supabase.md (RLS, indexes, connection pooling)
+- **Supporting:** 06-api.md (validation before queries), 04-nextjs.md (caching tags)
+- **Optimization:** 15-database-patterns.md (planned)
 
-### Forms
-- ✅ **Zod + Server Actions ONLY**
-- ❌ React Hook Form (STRICTLY FORBIDDEN)
-- ❌ Formik, Yup, VeeValidate
+### Authentication & Security
+- **Primary:** 09-auth.md (session management, auth checks)
+- **Supporting:** 06-api.md (Server Action guards), 04-nextjs.md (cookie handling)
+- **Headers & CSP:** 12-security.md (planned)
 
-### Styling
-- ✅ **Tailwind CSS**
-- ❌ CSS Modules, Styled Components, Emotion, Sass
+### Component Architecture
+- **Primary:** 03-react.md (Server/Client Components, hooks)
+- **Supporting:** 01-architecture.md (file structure), 08-ui.md (shadcn/ui), 07-forms.md (form patterns)
 
----
+### Forms & Validation
+- **Primary:** 07-forms.md (Zod, accessibility, UX)
+- **Supporting:** 06-api.md (Server Action validation), 02-typescript.md (type safety)
 
-## Before-Writing-Code Checklist
+## 🚀 Detection Commands
 
-### 1. File Placement (01-architecture.md)
-- [ ] Does this file belong in `features/[portal]/[feature]/` or `lib/`?
-- [ ] Is this a page, component, query, mutation, or type?
-- [ ] Does a feature folder already exist for this?
-- [ ] Will this file exceed 200 lines? (If yes, plan split now)
-
-### 2. Type Safety (02-typescript.md)
-- [ ] Am I using `unknown` instead of `any`?
-- [ ] Do I need a type guard for runtime validation?
-- [ ] Should I infer this type from Zod schema or Supabase types?
-- [ ] Is strict mode enabled in tsconfig.json?
-
-### 3. Component Type (03-react.md)
-```
-Server Component if:
-  - Fetches data
-  - No interactivity (useState, useEffect, event handlers)
-  - No browser APIs
-
-Client Component if:
-  - Uses hooks (useState, useEffect, useActionState)
-  - Event handlers (onClick, onChange)
-  - Browser APIs (localStorage, window)
-  - Third-party libraries requiring 'use client'
-```
-
-### 4. Caching Strategy (04-nextjs.md)
-```
-revalidateTag('tag', 'max')  → After write operations (updateTag for immediate)
-revalidatePath('/path', 'page') → After mutations affecting specific pages
-unstable_cache(fn, keys, { tags }) → For expensive computations
-```
-
-### 5. Database Operations (05-database.md)
-- [ ] Does this table have RLS enabled?
-- [ ] Are RLS policies using `(select auth.uid())` for caching?
-- [ ] Do I need a migration for this schema change?
-- [ ] Have I generated TypeScript types after migration?
-- [ ] Are there indexes on RLS-filtered columns?
-
-### 6. API Pattern (06-api.md)
-```
-Server Action if:
-  - Form submission
-  - Mutation (create, update, delete)
-  - Called from Client Component
-
-Route Handler if:
-  - REST API for external clients
-  - Webhooks
-  - Streaming responses
-  - File downloads
-```
-
-### 7. Form Validation (07-forms.md)
-- [ ] Is validation defined with Zod schema?
-- [ ] Am I using `useActionState` for form state?
-- [ ] Does the Server Action use `safeParse()` for validation?
-- [ ] Are field-level errors displayed?
-- [ ] Is the form accessible (ARIA labels, error announcements)?
-- [ ] **Am I AVOIDING React Hook Form?** (FORBIDDEN)
-
-### 8. UI Components (08-ui.md)
-- [ ] Does shadcn/ui have a component for this? (Check with `npx shadcn@latest add`)
-- [ ] Am I leaving slot `className` props pristine? (NO custom styling on Title/Description)
-- [ ] Am I using semantic components? (Item/Empty/Field, not Card for everything)
-- [ ] Mobile-first responsive design? (`sm:`, `md:`, `lg:`)
-- [ ] Dark mode support? (`dark:` prefix)
-
-### 9. Authentication (09-auth.md)
-- [ ] Am I using `getUser()` (NOT `getSession()`) for server-side auth?
-- [ ] Does middleware call `await supabase.auth.getUser()` to refresh session?
-- [ ] Are protected routes using `redirect()` from `next/navigation`?
-- [ ] Are RLS policies using `auth.uid()` for user isolation?
-
----
-
-## Quick Reference Tables
-
-### File Size Limits
-
-| File Type | Max Lines | When to Split |
-|-----------|-----------|---------------|
-| `page.tsx` | 100 | Extract to components/ |
-| Server Component | 200 | Extract logic to queries/ |
-| Client Component | 200 | Split into smaller components |
-| Server Action | 50 | One action per file |
-| Query file | 150 | Split by domain/feature |
-| Mutation file | 100 | One mutation per file |
-| Type file | 300 | Split by domain |
-
-### Component Triggers
-
-| Need | Pattern | File |
-|------|---------|------|
-| Fetch data | Server Component with `cache()` | 03-react.md |
-| Form submission | `useActionState` + Server Action | 07-forms.md |
-| Optimistic update | `useOptimistic` hook | 03-react.md |
-| Loading state | `<Suspense>` boundary | 03-react.md |
-| Pending button | `useFormStatus` hook | 07-forms.md |
-| User interaction | Client Component with `'use client'` | 03-react.md |
-| API endpoint | Route Handler | 06-api.md |
-| Webhook | Route Handler with signature verification | 06-api.md |
-
-### Cache Invalidation
-
-| Scenario | Command | File |
-|----------|---------|------|
-| After write | `updateTag('tag')` (immediate) | 04-nextjs.md |
-| Specific page | `revalidatePath('/path', 'page')` | 04-nextjs.md |
-| Layout tree | `revalidatePath('/path', 'layout')` | 04-nextjs.md |
-| Background sync | `revalidateTag('tag', 'max')` | 04-nextjs.md |
-| All cache | `revalidatePath('/', 'layout')` | 04-nextjs.md |
-
-### Auth Context
-
-| Context | Client Type | Method | File |
-|---------|-------------|--------|------|
-| Server Component | `createServerClient` | `getUser()` | 09-auth.md |
-| Server Action | `createServerClient` | `getUser()` | 09-auth.md |
-| Route Handler | `createServerClient` | `getUser()` | 09-auth.md |
-| Middleware | `createServerClient` | `getUser()` + `updateSession` | 09-auth.md |
-| Client Component | `createBrowserClient` | `getUser()` or `getSession()` | 09-auth.md |
-
-### Validation
-
-| Data Source | Pattern | File |
-|-------------|---------|------|
-| Form submission | `safeParse(Object.fromEntries(formData))` | 07-forms.md |
-| API request | `safeParse(await request.json())` | 06-api.md |
-| Query params | `safeParse({ id: params.id })` | 06-api.md |
-| File upload | `z.instanceof(File).refine(...)` | 07-forms.md |
-
----
-
-## Detection Commands
-
-Run these to find violations in your codebase:
+Each rule file includes detection commands (bash scripts) to enforce compliance in CI/CD. Run them before committing:
 
 ```bash
-# Find oversized files
-fd -e tsx -e ts -x wc -l {} \; | awk '$1 > 200 {print $2 " has " $1 " lines"}'
+# Check Next.js caching compliance
+npm run lint:nextjs
 
-# Find React Hook Form usage (FORBIDDEN)
-rg "react-hook-form|useForm\(|zodResolver" --type ts
+# Verify TypeScript type safety
+npm run typecheck
 
-# Find client-side database calls (FORBIDDEN)
-rg "createClient.*cookies.*get.*set" app/ features/ --type tsx -A 3 | rg "useState|useEffect"
-
-# Find getSession() usage (should be getUser())
-rg "getSession\(\)" --type ts -g "!**/middleware.ts"
-
-# Find missing 'use client' directives
-rg "useState|useEffect|onClick|onChange" --type tsx -B 5 | rg -v "use client"
-
-# Find Server Actions without 'use server'
-rg "export async function.*FormData" --type ts -B 5 | rg -v "use server"
-
-# Find RLS policies without auth.uid()
-rg "CREATE POLICY|ALTER POLICY" supabase/migrations/ -A 10 | rg -v "auth\.uid\(\)"
-
-# Find tables without RLS enabled
-rg "CREATE TABLE" supabase/migrations/ | rg -v "ENABLE ROW LEVEL SECURITY"
-
-# Find validation without Zod
-rg "if.*\.length|if.*\.match|if.*typeof" features/ --type ts -g "**/mutations/*.ts" -g "**/actions/*.ts"
+# Run all detection suites
+npm run lint
+npm run typecheck
+./scripts/verify-all-rules.sh  # (Recommended to create)
 ```
 
----
+## 📊 Checklist Statistics
 
-## Common Violations & Fixes
+| File | Items | Deprecated | Forbidden | Detection Commands |
+|------|-------|-----------|-----------|-------------------|
+| 01-architecture.md | 100+ | 10+ | 5+ | 15+ |
+| 02-typescript.md | 100+ | 5+ | 10+ | 12+ |
+| 03-react.md | 100+ | 8+ | 15+ | 18+ |
+| **04-nextjs.md** | **201** | **20+** | **40+** | **20+** |
+| 05-supabase.md | 100+ | 5+ | 8+ | 14+ |
+| 06-api.md | 100+ | 3+ | 12+ | 16+ |
+| 07-forms.md | 100+ | 2+ | 8+ | 10+ |
+| 08-ui.md | 100+ | 0 | 6+ | 8+ |
+| 09-auth.md | 100+ | 5+ | 10+ | 12+ |
 
-### 1. Wrong Client Type
-❌ **WRONG:**
-```tsx
-'use client'
-export default async function Page() {
-  const data = await fetch('/api/data') // Client Components can't be async
-}
-```
+## 🔄 Most Important Cross-Reference Points
 
-✅ **CORRECT:**
-```tsx
-// Server Component (no directive needed)
-export default async function Page() {
-  const data = await fetch('/api/data')
-  return <ClientList data={data} />
-}
-```
+### Next.js Rules (04-nextjs.md) connects with:
 
-### 2. Missing Auth Guard
-❌ **WRONG:**
-```ts
-'use server'
-export async function deleteItem(id: string) {
-  await supabase.from('items').delete().eq('id', id) // No auth check!
-}
-```
+**Upward Dependencies:**
+- 01-architecture.md → caching API fundamentals
+- 03-react.md → Suspense, cache() deduplication
+- 02-typescript.md → type safety for cache tags
 
-✅ **CORRECT:**
-```ts
-'use server'
-export async function deleteItem(id: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Unauthorized' }
+**Downward Dependencies:**
+- 06-api.md → updateTag/revalidateTag in Server Actions
+- 05-supabase.md → cache tags for DB queries
+- 09-auth.md → cookie handling in Server Actions
 
-  await supabase.from('items').delete().eq('id', id)
-}
-```
+**Coordination Points:**
+- **Caching orchestration:** All Server Actions and Route Handlers must reference 04-nextjs.md
+- **Tag naming:** Maintain consistent hierarchical tags across 06-api.md and 04-nextjs.md
+- **Revalidation timing:** Coordinate between updateTag (immediate) vs revalidateTag (background)
 
-### 3. Client-Side Database Call
-❌ **WRONG:**
-```tsx
-'use client'
-import { createClient } from '@/lib/supabase/client'
+## 📝 How to Use This Guide
 
-export function DataList() {
-  const [data, setData] = useState([])
+1. **Bookmark this README** → Reference when making architectural decisions
+2. **Read rule file summaries** → Each file starts with a summary of key patterns
+3. **Check FORBIDDEN PATTERNS** → Understand what NOT to do
+4. **Run detection commands** → Verify compliance automatically
+5. **Cross-reference** → Jump between related files using the cross-reference tables
+6. **Update as needed** → When Next.js/React versions change, update affected files
 
-  useEffect(() => {
-    createClient().from('items').select('*').then(...)
-  }, [])
-}
-```
+## 🆕 Contributing Updates
 
-✅ **CORRECT:**
-```tsx
-// Server Component fetches
-async function DataList() {
-  const supabase = await createClient()
-  const { data } = await supabase.from('items').select('*')
-  return <ClientList data={data} />
-}
+When updating rules:
+1. Update the relevant rule file
+2. Update "Last Updated" date (top of file)
+3. Update this README's cross-reference table and statistics
+4. Run all detection commands to verify enforcement
+5. Test that detection scripts catch violations properly
 
-// Client Component receives props
-'use client'
-function ClientList({ data }: { data: Item[] }) {
-  return <ul>{data.map(...)}</ul>
-}
-```
+## 📞 Questions or Issues?
 
-### 4. React Hook Form Usage
-❌ **WRONG:**
-```tsx
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-
-function MyForm() {
-  const form = useForm({ resolver: zodResolver(schema) })
-}
-```
-
-✅ **CORRECT:**
-```tsx
-'use client'
-import { useActionState } from 'react'
-
-function MyForm() {
-  const [state, action, pending] = useActionState(serverAction, null)
-  return <form action={action}>...</form>
-}
-```
-
-### 5. Slot Styling Override
-❌ **WRONG:**
-```tsx
-import { Card, CardTitle } from '@/components/ui/card'
-
-<Card>
-  <CardTitle className="text-red-500">Title</CardTitle> {/* NO! */}
-</Card>
-```
-
-✅ **CORRECT:**
-```tsx
-import { Card, CardTitle } from '@/components/ui/card'
-
-<Card>
-  <CardTitle>Title</CardTitle>
-  <div className="text-red-500">Custom content</div>
-</Card>
-```
-
----
-
-## Migration from Old Rules
-
-### What Changed?
-
-| Old File | New File(s) | Key Changes |
-|----------|-------------|-------------|
-| `architecture.md` | `01-architecture.md` | Next.js 15/16 App Router patterns, async params, file size limits |
-| `typescript.md` | `02-typescript.md` | TypeScript 5.x features (`const` type params, `satisfies`), Supabase types |
-| `react.md` | `03-react.md` | React 19 hooks (useActionState, useOptimistic), Server/Client split |
-| `nextjs.md` | `04-nextjs.md` | Next.js 16 breaking changes, updateTag vs revalidateTag, async params |
-| `supabase.md` | `05-database.md` + `09-auth.md` | Split into database and auth concerns, RLS optimization, getClaims() |
-| `forms.md` | `07-forms.md` | **ELIMINATED React Hook Form**, Zod-only validation, useActionState |
-| `ui.md` | `08-ui.md` | shadcn/ui v0.9.0 new components, Tailwind CSS v4, slot styling rules |
-| N/A | `06-api.md` | **NEW** - Server Actions vs Route Handlers decision tree, Zod validation |
-
-### Breaking Changes to Note
-
-**Next.js 16:**
-- `params` and `searchParams` are now `Promise<T>` (must `await`)
-- `revalidateTag(tag, 'max')` requires cache profile
-- `revalidatePath(path, 'page')` requires type parameter
-- Supabase `createClient()` is async (must `await`)
-
-**React 19:**
-- `useFormState` renamed to `useActionState`
-- `useOptimistic` replaces manual optimistic patterns
-- `useFormStatus` replaces custom pending state logic
-
-**Forms:**
-- React Hook Form is now **FORBIDDEN**
-- All forms use native HTML + Server Actions
-- Validation is server-side with Zod `safeParse()`
-
-**shadcn/ui:**
-- Use semantic components (Item/Empty/Field) over generic Card
-- Slot styling is **FORBIDDEN** (no `className` on Title/Description)
-- New components: Spinner, Kbd, ButtonGroup, InputGroup, Field, Item, Empty
-
----
-
-## File Structure Summary
-
-```
-docs/rules/
-├── old files...         # Original rules (UNTOUCHED)
-└── new/
-    ├── README.md                 # This file
-    ├── 01-architecture.md        # 35KB - File structure, naming, limits
-    ├── 02-typescript.md          # 29KB - Type safety, strict mode
-    ├── 03-react.md               # 24KB - Server/Client, React 19 hooks
-    ├── 04-nextjs.md              # 23KB - App Router, caching, async
-    ├── 05-database.md            # 25KB - Supabase, RLS, migrations
-    ├── 06-api.md                 # 30KB - Server Actions, validation
-    ├── 07-forms.md               # 24KB - Zod validation, useActionState
-    ├── 08-ui.md                  # 25KB - shadcn/ui, Tailwind patterns
-    └── 09-auth.md                # 30KB - Supabase Auth, session mgmt
-```
-
-**Total:** 9 files, 245KB of comprehensive documentation
-
----
-
-## Context7 Libraries Used
-
-All documentation is based on the latest official sources:
-
-1. **Next.js** - `/vercel/next.js` (v15/16 App Router)
-2. **React** - `/facebook/react` (v19)
-3. **TypeScript** - `/microsoft/typescript` (v5.9.2)
-4. **Supabase** - `/supabase/supabase` (JS 2.47.15, SSR 0.6.1)
-5. **Zod** - `/colinhacks/zod` (v3.24.2)
-6. **Tailwind CSS** - `/tailwindlabs/tailwindcss.com` (v4.0)
-7. **shadcn/ui** - `/shadcn-ui/ui` (v0.9.0)
-
----
-
-## Success Criteria
-
-- [x] 9 files created in `docs/rules/`
-- [x] README.md created
-- [x] All files follow template structure
-- [x] Context7 data fetched for all topics
-- [x] Original files in `docs/rules/` untouched
-- [x] Decision trees in all files
-- [x] FORBIDDEN sections in all files
-- [x] Detection commands in all files
-- [x] Real, production-ready examples (no placeholders)
-- [x] Stack-specific (Supabase, Zod, shadcn/ui, Next.js 15/16)
-
----
-
-## How to Use This Documentation
-
-### For Developers
-1. **Before coding:** Run through the "Before-Writing-Code Checklist" above
-2. **During coding:** Reference the specific pattern file (01-09)
-3. **After coding:** Run detection commands to find violations
-4. **Before PR:** Review "Common Violations & Fixes" section
-
-### For AI Code Assistants
-1. **Read files in order** for comprehensive understanding
-2. **Use Quick Reference Tables** for instant pattern lookup
-3. **Check FORBIDDEN sections** before suggesting solutions
-4. **Run Detection Commands** to validate suggested changes
-5. **Reference specific pattern numbers** (e.g., "Pattern 3 from 03-react.md")
-
-### For Code Reviews
-1. **Check file placement** against 01-architecture.md
-2. **Verify type safety** against 02-typescript.md patterns
-3. **Validate auth patterns** against 09-auth.md (getUser vs getSession)
-4. **Confirm no FORBIDDEN libraries** (React Hook Form, other UI libs, etc.)
-5. **Run detection commands** to catch missed violations
-
----
-
-## Next Steps
-
-1. **Review each file** (01-09) to ensure accuracy and completeness
-2. **Run detection commands** on current codebase to find violations
-3. **Update team documentation** to reference these new rules
-4. **Create migration plan** for existing code violating new patterns
-5. **Integrate into CI/CD** (run detection commands as pre-commit hooks)
-
----
-
-**Documentation generated on 2025-11-03 by 9 parallel rules-upgrader agents using Context7 MCP.**
+- For caching questions → Check 04-nextjs.md (200+ items)
+- For architecture questions → Check 01-architecture.md
+- For data/query questions → Check 05-supabase.md + 06-api.md
+- For component questions → Check 03-react.md + 08-ui.md
+- For form validation → Check 07-forms.md
